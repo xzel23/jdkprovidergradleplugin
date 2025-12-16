@@ -1,3 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Axel Howind
+// This file is part of the JDK Provider Gradle Plugin.
+// The JDK Provider Gradle Plugin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// The JDK Provider Gradle Plugin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see https://www.gnu.org/licenses/
+
 package com.dua3.gradle.jdkprovider.provision;
 
 import java.io.IOException;
@@ -18,6 +32,13 @@ public final class HttpDownloader {
     private final Duration timeout;
     private final int retries;
 
+    /**
+     * Constructs an instance of the HttpDownloader class with specified configuration parameters.
+     *
+     * @param connectTimeoutMs the timeout in milliseconds for establishing the HTTP connection
+     * @param readTimeoutMs the timeout in milliseconds for waiting to read data from the HTTP connection
+     * @param retries the maximum number of retries to perform for transient failures; must be zero or greater
+     */
     public HttpDownloader(int connectTimeoutMs, int readTimeoutMs, int retries) {
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
@@ -27,6 +48,17 @@ public final class HttpDownloader {
         this.retries = Math.max(0, retries);
     }
 
+    /**
+     * Downloads the content from the specified URI to the target file path.
+     * If the target file's parent directory does not exist, it will be created.
+     * The method retries the download up to the configured number of retries in case of transient failures.
+     *
+     * @param uri the URI from which the content will be downloaded
+     * @param targetFile the path to the file where the downloaded content will be saved
+     * @return the path to the target file containing the downloaded content
+     * @throws IOException if an I/O error occurs during the download, including HTTP errors
+     * @throws InterruptedException if the operation is interrupted
+     */
     public Path downloadTo(URI uri, Path targetFile) throws IOException, InterruptedException {
         Files.createDirectories(targetFile.getParent());
         int attempts = 0;

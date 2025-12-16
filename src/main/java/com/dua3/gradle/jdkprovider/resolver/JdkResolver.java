@@ -1,6 +1,20 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Axel Howind
+// This file is part of the JDK Provider Gradle Plugin.
+// The JDK Provider Gradle Plugin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// The JDK Provider Gradle Plugin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see https://www.gnu.org/licenses/
+
 package com.dua3.gradle.jdkprovider.resolver;
 
-import com.dua3.gradle.jdkprovider.disco.DiscoApiSelector;
+import com.dua3.gradle.jdkprovider.disco.DiscoApiClient;
 import com.dua3.gradle.jdkprovider.local.JdkInstallation;
 import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
@@ -21,10 +35,26 @@ public class JdkResolver {
 
     private static final Logger LOGGER = Logging.getLogger(JdkResolver.class);
 
+    /**
+     * Constructs a new instance of the JdkResolver.
+     */
     public JdkResolver() {
-        LOGGER.debug("[Java Resolver] Initializing");
+        LOGGER.debug("Initializing");
     }
 
+    /**
+     * Resolves a JDK installation that matches the specified requirements. This method checks
+     * for compatible local JDK installations and, if none are found, attempts to provision a
+     * JDK using the DiscoAPI, provided offline mode is disabled.
+     *
+     * @param jdkSpec      the specification of the JDK version and features required.
+     * @param offlineMode  a flag indicating whether the resolution process should avoid
+     *                     network communication and rely only on local installations.
+     * @return an {@code Optional} containing a {@link JdkInstallation} that meets the
+     *         requirements, or an empty {@code Optional} if no suitable JDK could be resolved.
+     * @throws GradleException if the toolchain cannot be resolved due to offline mode or failure
+     *                         in provisioning a JDK using the DiscoAPI.
+     */
     public Optional<JdkInstallation> resolve(JdkSpec jdkSpec, boolean offlineMode) {
         LOGGER.debug("[Java Resolver] Resolving toolchain for {}", jdkSpec);
 
@@ -43,7 +73,7 @@ public class JdkResolver {
                     // use DiscoAPI to lookup and provision a suitable JDK
                     LOGGER.debug("[Java Resolver] No com.dua3.gradle.jdkprovider.local JDK found, querying DiscoAPI");
 
-                    return new DiscoApiSelector().findPackage(jdkSpec)
+                    return new DiscoApiClient().findPackage(jdkSpec)
                             .map(pkg -> {
                                 try {
                                     Path jdkHome = new JdkProvisioner()

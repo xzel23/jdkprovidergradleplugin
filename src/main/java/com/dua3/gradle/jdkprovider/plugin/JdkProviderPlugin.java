@@ -1,3 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Axel Howind
+// This file is part of the JDK Provider Gradle Plugin.
+// The JDK Provider Gradle Plugin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// The JDK Provider Gradle Plugin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see https://www.gnu.org/licenses/
+
 package com.dua3.gradle.jdkprovider.plugin;
 
 import com.dua3.gradle.jdkprovider.resolver.JdkResolver;
@@ -9,10 +23,12 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.jvm.toolchain.JavaToolchainSpec;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,13 +36,60 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * A Gradle plugin for managing JDK dependencies in a project. This plugin resolves and configures
+ * a specific JDK based on user-defined criteria, downloads it if necessary, and integrates it into
+ * the build tasks such as compilation, execution, testing, and documentation generation.
+ * <p>
+ * The plugin registers an extension named "jdk" of type {@link JdkExtension}.
+ * This extension allows users to specify JDK requirements such as version, vendor, operating system,
+ * architecture, and additional capabilities (e.g., native image support or bundled JavaFX).
+ * <p>
+ * Upon evaluation of the project:
+ * 1. The plugin resolves the requested JDK based on the specification provided through the extension.
+ * 2. If automatic download is enabled and the Gradle offline mode is not active, the plugin
+ *    attempts to download the matching JDK if not found in standard installation paths or in the
+ *    local cache.
+ * 3. The identified JDK is copied or linked into the project's build directory.
+ * 4. The plugin updates relevant build tasks (e.g., JavaExec, JavaCompile, Test, Javadoc) to
+ *    use the resolved JDK executables.
+ * <p>
+ * If no matching JDK is found, or if an error occurs during resolution or installation, the
+ * plugin throws a {@link GradleException} with details about the failure.
+ */
 public abstract class JdkProviderPlugin implements Plugin<Project> {
     private static final Logger LOGGER = Logging.getLogger(JdkProviderPlugin.class);
 
+    /**
+     * Apply the plugin to the project as described in the plugin class description.
+     *
+     * @param project the project to apply the plugin to
+     */
     @Override
     public void apply(Project project) {
-        // Register the extension
-        JdkProviderExtension extension = project.getExtensions().create("jdkProvider", JdkProviderExtension.class, project.getObjects());
+        Logger logger = project.getLogger();
+
+        // Check if another plugin has registered an extension with the same name
+        if (project.getExtensions().findByName("jdk") != null) {
+            throw new GradleException(
+                    "A 'jdk' extension already exists. Only plugin controlling JDK resolution may be applied."
+            );
+        }
+
+        // Optionally warn if a toolchain is configured differently
+        JavaPluginExtension javaExt = project.getExtensions().findByType(JavaPluginExtension.class);
+        if (javaExt != null) {
+            JavaToolchainSpec toolchain = javaExt.getToolchain();
+
+            // Gradle always sets a default language version; compare it to the running JVM
+            boolean languageVersionSet = toolchain.getLanguageVersion().isPresent();
+            if (languageVersionSet) {
+                project.getLogger().warn("The JDK Provider plugin will override the toolchain settings.");
+            }
+        }
+
+        // Register the 'jdk' extension
+        JdkExtension extension = project.getExtensions().create("jdk", JdkExtension.class, project.getObjects());
 
         project.afterEvaluate(p -> {
             // resolve and install JDK into project build dir
@@ -39,7 +102,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                     .javaFxBundled(extension.getJavaFxBundled().getOrNull())
                     .build();
 
-            LOGGER.debug("afterEvaluate: jdkSpec = {}", jdkSpec);
+            logger.debug("afterEvaluate: jdkSpec = {}", jdkSpec);
 
             Boolean automaticDownload = extension.getAutomaticDownload().getOrElse(true);
             boolean gradleOfflineMode = project.getGradle().getStartParameter().isOffline();
@@ -54,7 +117,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                                 throw new GradleException("No matching JDK found for " + jdkSpec + " in local cache or DiscoAPI.");
                             }
                     );
-            LOGGER.debug("JDK is present in {}", jdkDir);
+            logger.debug("JDK is present in {}", jdkDir);
 
             // wire tasks
             Path jdkBin = jdkDir.resolve("bin");
@@ -72,10 +135,19 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             });
 
             // log
-            LOGGER.lifecycle("JDK Provider plugin applied (automatic download = {}, offline mode = {}).", automaticDownload, gradleOfflineMode);
+            logger.lifecycle("JDK Provider plugin applied (automatic download = {}, offline mode = {}).", automaticDownload, gradleOfflineMode);
         });
     }
 
+    /**
+     * Copies or creates a symbolic link for the JDK directory from the specified source path to the target path.
+     * If symbolic linking is not supported, the method falls back to copying the directory content recursively.
+     *
+     * @param jdkPath the path to the source JDK directory to be linked or copied
+     * @param target the target path where the JDK should be linked or copied to
+     * @throws GradleException if an error occurs during linking or copying the JDK directory
+     * @throws NullPointerException if the parent of the target path is null
+     */
     private static void copyOrLinkJdkDirectory(Path jdkPath, Path target) {
         if (Files.exists(target)) {
             LOGGER.info("JDK already present at target location: {}", target);

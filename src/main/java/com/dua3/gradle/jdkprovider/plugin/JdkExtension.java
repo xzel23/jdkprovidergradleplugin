@@ -1,3 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Axel Howind
+// This file is part of the JDK Provider Gradle Plugin.
+// The JDK Provider Gradle Plugin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// The JDK Provider Gradle Plugin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see https://www.gnu.org/licenses/
+
 package com.dua3.gradle.jdkprovider.plugin;
 
 import com.dua3.gradle.jdkprovider.types.OSFamily;
@@ -11,7 +25,7 @@ import javax.inject.Inject;
 /**
  * Extension for configuring the JDK selection.
  */
-public abstract class JdkProviderExtension {
+public abstract class JdkExtension {
 
     private final Property<OSFamily> os;
     private final Property<SystemArchitecture> arch;
@@ -22,7 +36,7 @@ public abstract class JdkProviderExtension {
     private final Property<Boolean> automaticDownload;
 
     @Inject
-    public JdkProviderExtension(ObjectFactory objects) {
+    public JdkExtension(ObjectFactory objects) {
         this.os = objects.property(OSFamily.class);
         this.arch = objects.property(SystemArchitecture.class);
         this.version = objects.property(String.class);

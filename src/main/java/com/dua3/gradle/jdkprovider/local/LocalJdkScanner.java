@@ -1,3 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2025 Axel Howind
+// This file is part of the JDK Provider Gradle Plugin.
+// The JDK Provider Gradle Plugin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// The JDK Provider Gradle Plugin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see https://www.gnu.org/licenses/
+
 package com.dua3.gradle.jdkprovider.local;
 
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
@@ -27,6 +41,13 @@ public final class LocalJdkScanner {
 
     private static final Logger LOGGER = Logging.getLogger(LocalJdkScanner.class);
 
+    /**
+     * Constructs a new instance of {@code LocalJdkScanner}.
+     * This class is responsible for scanning the local system to discover installed JDKs,
+     * leveraging common locations such as the system's {@code JAVA_HOME} environment variable
+     * or paths specified in configuration properties (e.g., Gradle's installation paths).
+     * When instantiated, the scanner is ready to perform discovery operations.
+     */
     public LocalJdkScanner() {
     }
 
