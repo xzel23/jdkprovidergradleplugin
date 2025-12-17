@@ -14,6 +14,7 @@
 
 package com.dua3.gradle.jdkprovider.plugin;
 
+import com.dua3.gradle.jdkprovider.local.JdkInstallation;
 import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.resolver.JdkResolver;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
@@ -110,23 +111,14 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             boolean gradleOfflineMode = project.getGradle().getStartParameter().isOffline();
             boolean offlineMode = gradleOfflineMode || !automaticDownload;
 
-            Path buildDir = project.getLayout().getBuildDirectory().getAsFile().get().toPath();
-            Path jdkDir = buildDir.resolve("jdk");
-            new JdkResolver().resolve(jdkSpec, offlineMode)
-                    .ifPresentOrElse(
-                            jdkInstallation -> copyOrLinkJdkDirectory(jdkInstallation.jdkHome(), jdkDir),
-                            () -> {
-                                throw new GradleException("No matching JDK found for " + jdkSpec + " in local cache or DiscoAPI.");
-                            }
-                    );
-            logger.debug("JDK is present in {}", jdkDir);
-            String jdkinfo = LocalJdkScanner.readJdkSpec(jdkDir)
-                    .map(jdkInstallation -> jdkInstallation.jdkSpec().toString())
-                    .orElse(jdkDir.toString());
-            logger.lifecycle("JDK for this build: {}", jdkinfo);
+            JdkInstallation jdkInstallation = new JdkResolver().resolve(jdkSpec, offlineMode)
+                    .orElseThrow(() -> new GradleException("No matching JDK found for " + jdkSpec));
+
+            logger.debug("Using JDK: {}", jdkInstallation.jdkHome());
+            logger.lifecycle("JDK for this build: {}", jdkInstallation.jdkSpec());
 
             // wire tasks
-            Path jdkBin = jdkDir.resolve("bin");
+            Path jdkBin = jdkInstallation.jdkHome().resolve("bin");
             String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
             String java = jdkBin.resolve("java" + executableExtension).toString();
             String javac = jdkBin.resolve("javac" + executableExtension).toString();
@@ -140,53 +132,5 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 task.getOptions().getForkOptions().setExecutable(javac);
             });
         });
-    }
-
-    /**
-     * Copies or creates a symbolic link for the JDK directory from the specified source path to the target path.
-     * If symbolic linking is not supported, the method falls back to copying the directory content recursively.
-     *
-     * @param jdkPath the path to the source JDK directory to be linked or copied
-     * @param target the target path where the JDK should be linked or copied to
-     * @throws GradleException if an error occurs during linking or copying the JDK directory
-     * @throws NullPointerException if the parent of the target path is null
-     */
-    private static void copyOrLinkJdkDirectory(Path jdkPath, Path target) {
-        if (Files.exists(target)) {
-            LOGGER.info("JDK already present at target location: {}", target);
-        } else {
-            // create the parent folder if necessary
-            try {
-                Files.createDirectories(Objects.requireNonNull(target.getParent(), "target parent must not be null"));
-            } catch (IOException e) {
-                throw new GradleException("Failed to create directory: " + target.getParent(), e);
-            }
-
-            // try to create symlink
-            try {
-                Files.createSymbolicLink(target, jdkPath);
-                LOGGER.info("created symbolic link to JDK: {} -> {}", jdkPath, target);
-            } catch (UnsupportedOperationException | FileSystemException ignored) {
-                LOGGER.debug("JDK symlinking not supported, copying instead: {} -> {}", jdkPath, target);
-                try (Stream<Path> files = Files.walk(jdkPath)) {
-                    files.forEach(sourcePath -> {
-                        try {
-                            Path targetPath = target.resolve(jdkPath.relativize(sourcePath));
-                            if (Files.isDirectory(sourcePath)) {
-                                Files.createDirectories(targetPath);
-                            } else {
-                                Files.copy(sourcePath, targetPath);
-                            }
-                        } catch (IOException e) {
-                            throw new GradleException("Failed to copy file: " + sourcePath, e);
-                        }
-                    });
-                } catch (IOException e) {
-                    throw new GradleException("Failed to copy JDK directory: " + jdkPath + " -> " + target, e);
-                }
-            } catch (IOException e) {
-                throw new GradleException("Failed to create symbolic link: " + jdkPath + " -> " + target, e);
-            }
-        }
     }
 }
