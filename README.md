@@ -38,12 +38,12 @@ Configure the plugin via the `jdk` extension. All properties are optional; unspe
 
 Supported properties (with defaults):
 
-- `version: String` — Java version requirement. Examples: `"21"`, `">=21"`, `"17..21"`, or semantic ranges supported by the plugin. Default: `"any"`.
+- `version: String` — Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`. Default: when not speciefied, the latest available LTS version will be selected.
 - `vendor: org.gradle.jvm.toolchain.JvmVendorSpec` — Specific JDK vendor, e.g. `JvmVendorSpec.ADOPTIUM`, `JvmVendorSpec.ORACLE`, or `JvmVendorSpec.matching("GraalVM")`. Default: no preference (any vendor).
 - `os: com.dua3.gradle.jdkprovider.types.OSFamily` — Target operating system family (`LINUX`, `WINDOWS`, `MACOS`). Default: current OS.
 - `arch: com.dua3.gradle.jdkprovider.types.SystemArchitecture` — Target CPU architecture (e.g. `X64`, `AARCH64`). Default: current architecture.
-- `nativeImageCapable: Boolean` — Require a JDK that is capable of building native images (e.g., GraalVM distributions). Default: no preference.
-- `javaFxBundled: Boolean` — Require a JDK that bundles JavaFX (`true`) or excludes it (`false`). Default: no preference.
+- `nativeImageCapable: Boolean` — Require a JDK that is capable of building native images (e.g., GraalVM distributions). Default: false.
+- `javaFxBundled: Boolean` — Require a JDK that bundles JavaFX (`true`) or excludes it (`false`). Default: false.
 - `automaticDownload: Boolean` — Allow automatic download of matching JDKs when not found locally (ignored when Gradle is in offline mode). Default: `true`.
 
 Example (Kotlin DSL):
