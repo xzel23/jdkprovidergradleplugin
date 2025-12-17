@@ -14,6 +14,7 @@
 
 package com.dua3.gradle.jdkprovider.plugin;
 
+import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.resolver.JdkResolver;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
@@ -119,6 +120,10 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                             }
                     );
             logger.debug("JDK is present in {}", jdkDir);
+            String jdkinfo = LocalJdkScanner.readJdkSpec(jdkDir)
+                    .map(jdkInstallation -> jdkInstallation.jdkSpec().toString())
+                    .orElse(jdkDir.toString());
+            logger.lifecycle("JDK for this build: {}", jdkinfo);
 
             // wire tasks
             Path jdkBin = jdkDir.resolve("bin");
@@ -134,9 +139,6 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
             });
-
-            // log
-            logger.lifecycle("JDK Provider plugin applied (automatic download = {}, offline mode = {}).", automaticDownload, gradleOfflineMode);
         });
     }
 

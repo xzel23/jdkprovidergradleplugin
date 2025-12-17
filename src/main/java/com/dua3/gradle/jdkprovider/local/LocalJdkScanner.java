@@ -97,7 +97,7 @@ public final class LocalJdkScanner {
         OSFamily os = null;
         SystemArchitecture arch = null;
         JvmVendorSpec vendor = null;
-        Boolean nativeImageCapable = null;
+        Boolean nativeImageCapable = false;
         boolean javafxBundled = false;
 
         // Try release file

@@ -22,6 +22,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents specifications for a JDK.
@@ -153,13 +155,26 @@ public record JdkSpec(
      */
     @Override
     public String toString() {
-        return "jdk"
-                + "-" + Objects.toString(versionSpec, "any")
-                + "-" + Objects.toString(os, "any")
-                + "-" + Objects.toString(arch, "any")
-                + "-" + Objects.toString(vendor, "any")
-                + "-" + Objects.toString(nativeImageCapable, "any")
-                + "-" + Objects.toString(javaFxBundled, "any");
+        return Stream.of(
+                        vendorName(),
+                        versionSpec,
+                        os,
+                        arch,
+                        nativeImageCapable == Boolean.TRUE ? "native_image" : null,
+                        javaFxBundled == Boolean.TRUE ? "javafx" : null
+                )
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .collect(Collectors.joining("-"));
+    }
+
+    private String vendorName() {
+        if (vendor == null) {
+            return "any";
+        }
+        return vendor.toString()
+                .replaceFirst("^vendor matching\\('(.*)'\\)", "$1")
+                .replaceAll("[/\\\\:*?<>\"|-]", "_");
     }
 
     /**
