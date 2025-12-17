@@ -20,7 +20,7 @@ plugins {
 }
 
 group = "com.dua3.gradle"
-version = "0.1.0-rc2"
+version = "0.1.0-rc3-SNAPSHOT"
 
 java {
     toolchain {
