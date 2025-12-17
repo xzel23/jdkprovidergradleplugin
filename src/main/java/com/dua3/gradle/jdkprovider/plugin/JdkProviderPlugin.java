@@ -15,7 +15,6 @@
 package com.dua3.gradle.jdkprovider.plugin;
 
 import com.dua3.gradle.jdkprovider.local.JdkInstallation;
-import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.resolver.JdkResolver;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
@@ -24,7 +23,6 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -32,12 +30,7 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
 
-import java.io.IOException;
-import java.nio.file.FileSystemException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * A Gradle plugin for managing JDK dependencies in a project. This plugin resolves and configures
@@ -61,7 +54,6 @@ import java.util.stream.Stream;
  * plugin throws a {@link GradleException} with details about the failure.
  */
 public abstract class JdkProviderPlugin implements Plugin<Project> {
-    private static final Logger LOGGER = Logging.getLogger(JdkProviderPlugin.class);
 
     /**
      * Apply the plugin to the project as described in the plugin class description.
