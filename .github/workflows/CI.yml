@@ -27,7 +27,7 @@ jobs:
             runner: windows-latest
           - os: windows
             arch: aarch64
-            runner: windows-2025-arm
+            runner: windows-11-arm
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Check out repository
