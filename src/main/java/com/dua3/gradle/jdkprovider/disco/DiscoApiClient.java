@@ -202,7 +202,7 @@ public final class DiscoApiClient {
      * @return a string representing the architecture aliases as query arguments.
      *         Returns an empty string if {@code arch} is null.
      */
-    private String toQueryArg(SystemArchitecture arch) {
+    private static String toQueryArg(SystemArchitecture arch) {
         if (arch == null) return "";
         return arch.aliases().stream()
                 .map(alias -> param("architecture", alias))
@@ -440,8 +440,8 @@ public final class DiscoApiClient {
 
     private static boolean isSupportedArchiveType(String t) {
         if (t == null || t.isBlank()) return false;
-        String n = normalizeArchiveType(t);
-        return n.equals("zip") || n.equals("tar.gz") || n.equals("tgz");
+        String normalized = normalizeArchiveType(t);
+        return normalized.equals("zip") || normalized.equals("tar.gz") || normalized.equals("tgz");
     }
 
     /**

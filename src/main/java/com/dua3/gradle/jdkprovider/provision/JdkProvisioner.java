@@ -140,7 +140,7 @@ public final class JdkProvisioner {
      * @return the file name without its archive extension, or the original file name
      *         if it does not end with a recognized archive extension
      */
-    private String removeArchiveExtension(String fileName) {
+    private static String removeArchiveExtension(String fileName) {
         String archiveExtension = Stream.of(".tar.gz", ".tgz", ".zip", ".msi", ".exe", ".dmg", ".pkg")
                 .filter(fileName::endsWith)
                 .findFirst()
@@ -266,7 +266,7 @@ public final class JdkProvisioner {
      * This method checks system and environment variables to locate the Gradle user home directory:
      * 1. If the system property "gradle.user.home" is set and non-blank, its value is used.
      * 2. If the environment variable "GRADLE_USER_HOME" is set and non-blank, its value is used.
-     * 3. If neither is set or non-blank, the default location is resolved to a ".gradle" directory
+     * 3. If neither is set nor non-blank, the default location is resolved to a ".gradle" directory
      *    within the user's home directory as specified by the "user.home" system property.
      *
      * @return The path to the Gradle user home directory.

@@ -69,7 +69,7 @@ public class JdkResolver {
                         throw new GradleException("Offline mode detected or automatic download disabled, cannot resolve toolchain");
                     }
 
-                    // use DiscoAPI to lookup and provision a suitable JDK
+                    // use DiscoAPI to look up and provision a suitable JDK
                     LOGGER.debug("[JDK Provider - Resolver] No matching local JDK found, querying DiscoAPI");
 
                     return new DiscoApiClient().findPackage(jdkSpec)

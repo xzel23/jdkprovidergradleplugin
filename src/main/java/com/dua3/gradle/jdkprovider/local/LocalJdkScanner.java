@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Scans the local machine for JDK installations.
@@ -110,7 +111,7 @@ public final class LocalJdkScanner {
             }
         } catch (IOException e) {
             LOGGER.debug("could not detect JDK home: {}", jdkRoot, e);
-            throw new RuntimeException(e);
+            return null;
         }
         // 4) macOS bundles directly under extractedRoot: Contents/Home
         Path macHomeDirect = jdkRoot.resolve("Contents").resolve("Home");
@@ -152,8 +153,8 @@ public final class LocalJdkScanner {
         // JDK Provider cache
         Path cachedJdks = JdkProvisioner.getCachedJdksDir();
         if (Files.isDirectory(cachedJdks)) {
-            try {
-                Files.list(cachedJdks)
+            try (Stream<Path> paths = Files.list(cachedJdks)) {
+                paths
                         .filter(Files::isDirectory)
                         .forEach(p -> {
                             LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate JDK installation in cache dir: {}", p);
@@ -248,7 +249,7 @@ public final class LocalJdkScanner {
                 LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK vendor from release file: {}", release);
             }
 
-            // If GraalVM flag wasn't present in release file, try to detect native-image tool presence
+            // If no GraalVM flag was present in the release file, try to detect native-image tool presence
             if (nativeImageCapable == null || !nativeImageCapable) {
                 Path bin = jdkHome.resolve("bin");
                 boolean hasNativeImage = Files.isExecutable(bin.resolve("native-image"))

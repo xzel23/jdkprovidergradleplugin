@@ -18,7 +18,6 @@ import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import org.jspecify.annotations.NullMarked;
 
 import java.nio.file.Path;
-import java.util.Objects;
 
 /**
  * Represents the specification of a JDK installation, consisting of the installation path
