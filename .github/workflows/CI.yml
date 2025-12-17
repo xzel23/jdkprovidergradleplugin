@@ -20,9 +20,6 @@ jobs:
             arch: aarch64
             runner: ubuntu-24.04-arm
           - os: mac
-            arch: x64
-            runner: macos-13
-          - os: mac
             arch: aarch64
             runner: macos-14
           - os: windows
