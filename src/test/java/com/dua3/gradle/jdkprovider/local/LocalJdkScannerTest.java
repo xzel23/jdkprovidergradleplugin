@@ -54,7 +54,7 @@ class LocalJdkScannerTest {
         // create
         Path bin = fakeJdk.resolve("bin");
         Files.createDirectories(bin);
-        Files.writeString(bin.resolve("java"), "java");
+        Files.writeString(bin.resolve(OSFamily.current() == OSFamily.WINDOWS ? "java.exe" : "java"), "java");
 
         // create jmods/javafx-graphics.jmod to trigger JavaFX detection
         Path jmods = fakeJdk.resolve("jmods");
