@@ -16,10 +16,11 @@ plugins {
     `java-library`
     `java-gradle-plugin`
     `maven-publish`
+    id("com.gradle.plugin-publish") version "2.0.0"
 }
 
 group = "com.dua3.gradle"
-version = "0.1.0-rc"
+version = "0.1.0-rc2"
 
 java {
     toolchain {
@@ -49,12 +50,31 @@ tasks.test {
 }
 
 gradlePlugin {
+    website.set("https://github.com/xzel23/jdkprovidergradleplugin")
+    vcsUrl.set("https://github.com/xzel23/jdkprovidergradleplugin")
     plugins {
         register("jdk") {
             id = "com.dua3.gradle.jdkprovider"
             implementationClass = "com.dua3.gradle.jdkprovider.plugin.JdkProviderPlugin"
             displayName = "JDK Provider Plugin"
-            description = "Resolves Java toolchains using Foojay/DiscoAPI and provision it to Gradle build."
+            description = "Resolves and provisions suitable JDK for Gradle builds using the Foojay DiscoAPI"
+            tags.set(
+                listOf(
+                    "java",
+                    "jdk",
+                    "jdk-download",
+                    "javafx",
+                    "graalvm",
+                    "native-image",
+                    "toolchain",
+                    "foojay",
+                    "discoapi",
+                    // include ARM architecture tags as the plugin is an alternative to using toolchains with the
+                    // openjfx javafx-plugin which is unsupported on ARM
+                    "aarch64",
+                    "arm"
+                )
+            )
         }
     }
 }
