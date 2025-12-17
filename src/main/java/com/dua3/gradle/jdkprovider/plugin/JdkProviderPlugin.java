@@ -31,6 +31,7 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
 
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -152,13 +153,18 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
         if (Files.exists(target)) {
             LOGGER.info("JDK already present at target location: {}", target);
         } else {
+            // create the parent folder if necessary
             try {
                 Files.createDirectories(Objects.requireNonNull(target.getParent(), "target parent must not be null"));
+            } catch (IOException e) {
+                throw new GradleException("Failed to create directory: " + target.getParent(), e);
+            }
+
+            // try to create symlink
+            try {
                 Files.createSymbolicLink(target, jdkPath);
                 LOGGER.info("created symbolic link to JDK: {} -> {}", jdkPath, target);
-            } catch (IOException e) {
-                throw new GradleException("Failed to create symbolic link: " + jdkPath + " -> " + target, e);
-            } catch (UnsupportedOperationException ignored) {
+            } catch (UnsupportedOperationException | FileSystemException ignored) {
                 LOGGER.debug("JDK symlinking not supported, copying instead: {} -> {}", jdkPath, target);
                 try (Stream<Path> files = Files.walk(jdkPath)) {
                     files.forEach(sourcePath -> {
@@ -176,6 +182,8 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 } catch (IOException e) {
                     throw new GradleException("Failed to copy JDK directory: " + jdkPath + " -> " + target, e);
                 }
+            } catch (IOException e) {
+                throw new GradleException("Failed to create symbolic link: " + jdkPath + " -> " + target, e);
             }
         }
     }

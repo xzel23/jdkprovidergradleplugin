@@ -14,6 +14,7 @@
 
 package com.dua3.gradle.jdkprovider.provision;
 
+import com.dua3.gradle.jdkprovider.types.OSFamily;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -145,6 +146,11 @@ public final class ArchiveExtractor {
      * @throws IOException if an I/O error occurs while setting the POSIX file permissions
      */
     private static void applyPosixMode(Path out, int mode) throws IOException {
+        // On Windows, POSIX permissions are not supported by the default file system.
+        // Skip setting them to avoid UnsupportedOperationException.
+        if (OSFamily.current() == OSFamily.WINDOWS) {
+            return;
+        }
         if (mode == 0) return; // do not guess; rely on archive metadata
         EnumSet<PosixFilePermission> perms = EnumSet.noneOf(PosixFilePermission.class);
         // Apply mode bits (owner/group/others) similar to tar/zip unix mode

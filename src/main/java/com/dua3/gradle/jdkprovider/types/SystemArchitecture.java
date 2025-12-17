@@ -46,6 +46,8 @@ public enum SystemArchitecture {
      */
     X86_32("x86", "i386", "i486", "i586", "i686", "x86-32");
 
+    private static final SystemArchitecture CURRENT_ARCHITECTURE = parse(Objects.requireNonNull(System.getProperty("os.arch"), "os.arch system property not set"));
+
     private final List<String> aliases;
 
     SystemArchitecture(String... aliases) {
@@ -72,18 +74,10 @@ public enum SystemArchitecture {
     }
 
     /**
-     * Determines the current system architecture based on the `os.arch` system property.
-     * The method retrieves and parses the architecture information to return the corresponding
-     * {@code SystemArchitecture} enumerated value.
-     *
-     * @return the {@code SystemArchitecture} representing the current system's architecture.
-     * @throws NullPointerException if the `os.arch` system property is not set.
-     * @throws IllegalStateException if the value of the `os.arch` property cannot be mapped
-     *         to a known {@code SystemArchitecture}.
+     * Returns the current system architecture based on the `os.arch` system property.
      */
     public static SystemArchitecture current() {
-        String osArch = Objects.requireNonNull(System.getProperty("os.arch"), "os.arch system property not set");
-        return parse(osArch);
+        return CURRENT_ARCHITECTURE;
     }
 
     /**
