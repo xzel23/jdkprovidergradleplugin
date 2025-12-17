@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "*" ]
+  pull_request:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }}, ${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+          - os: linux
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+          - os: mac
+            arch: x64
+            runner: macos-13
+          - os: mac
+            arch: aarch64
+            runner: macos-14
+          - os: windows
+            arch: x64
+            runner: windows-latest
+          - os: windows
+            arch: aarch64
+            runner: windows-2025-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+          architecture: ${{ matrix.arch }}
+          cache: gradle
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.2.1
+
+      - name: Verify Gradle
+        run: gradle -v
+
+      - name: Build
+        run: gradle build --stacktrace
+
+  publish:
+    name: Publish to Gradle Plugin Portal
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, 'SNAPSHOT')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.2.1
+
+      - name: Publish plugin
+        env:
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+        run: gradle publishPlugins --stacktrace
