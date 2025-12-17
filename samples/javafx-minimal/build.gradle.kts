@@ -19,7 +19,6 @@ plugins {
 
 jdk {
     version = "25"
-    vendor = JvmVendorSpec.BELLSOFT
     javaFxBundled = true
 }
 
