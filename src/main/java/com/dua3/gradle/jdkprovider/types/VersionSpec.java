@@ -18,6 +18,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * A representation of a version specification that supports major, minor, and patch components. 
@@ -29,8 +30,19 @@ import java.util.Locale;
  * @param patch the patch version component, null when not specified, Integer.MAX_VALUE when used with "+"
  */
 @NullMarked
-public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nullable Integer patch) {
+public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nullable Integer patch) implements Comparable<VersionSpec> {
 
+    /**
+     * Canonical constructor.
+     * <p>
+     * Checks for valid version components.
+     *
+     * @param major the major version component
+     * @param minor the minor version component
+     * @param patch the patch version component
+     *
+     * @throws IllegalArgumentException if the version components are invalid.
+     */
     public VersionSpec {
         // Valid states:
         // - any: (null, null, null)
@@ -246,5 +258,25 @@ public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nul
             return true; // any patch
         }
         return actual.patch() != null && patch.equals(actual.patch());
+    }
+
+    @Override
+    public int compareTo(VersionSpec other) {
+        if (!Objects.equals(major, other.major)) {
+            if (major == null) return -1;
+            if (other.major == null) return 1;
+            return major.compareTo(other.major);
+        }
+        if (!Objects.equals(minor, other.minor)) {
+            if (minor == null) return -1;
+            if (other.minor == null) return 1;
+            return minor.compareTo(other.minor);
+        }
+        if (!Objects.equals(patch, other.patch)) {
+            if (patch == null) return -1;
+            if (other.patch == null) return 1;
+            return patch.compareTo(other.patch);
+        }
+        return 0;
     }
 }

@@ -15,15 +15,17 @@
 plugins {
     application
     id("com.dua3.gradle.jdkprovider")
+    id("org.beryx.jlink") version "3.1.5"
 }
 
 jdk {
-    version = "25"
+    version = "23"
     javaFxBundled = true
 }
 
 application {
     mainClass.set("com.example.HelloFxJLink")
+    mainModule.set("hello_jlink")
 }
 
 // Compile and run with the JavaFX controls module enabled (assuming a JavaFX-bundled JDK)

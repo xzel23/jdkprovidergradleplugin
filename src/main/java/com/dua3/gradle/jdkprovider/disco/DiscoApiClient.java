@@ -34,7 +34,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -131,6 +131,11 @@ public final class DiscoApiClient {
     URI buildPackagesQueryUrl(JdkSpec query) {
         List<String> params = new ArrayList<>();
         params.add("directly_downloadable=true");
+        params.add("package_type=jdk");
+        params.add("free_to_use_in_production=true");
+        params.add("archive_type=tar.gz");
+        params.add("archive_type=tgz");
+        params.add("archive_type=zip");
         addIfNonNullOrBlank(params, toQueryParam(query.versionSpec()));
         addIfNonNull(params, "operating_system", query.os());
         addIfNonNullOrBlank(params, toQueryArg(query.arch()));
@@ -157,16 +162,33 @@ public final class DiscoApiClient {
      */
     public Optional<DiscoPackage> findPackage(JdkSpec jdkSpec) {
         URI uri = buildPackagesQueryUrl(jdkSpec);
-        LOGGER.debug("Querying DiscoAPI: {}", uri);
+        LOGGER.debug("[JDK Provider - DiscoAPI Client] Querying: {}", uri);
         try {
             JSONArray arr = getJsonArray(uri);
-            Optional<DiscoPackage> selected = selectFromArray(arr, jdkSpec.os(), LOGGER);
-            if (selected.isPresent()) return selected;
+            return getDiscoPackages(arr).stream()
+                    .filter(pkg -> isSupportedArchiveType(pkg.archiveType()))
+                    .max(Comparator.comparing(DiscoPackage::version).thenComparing(DiscoApiClient::archiveProprity));
         } catch (IOException e) {
-            LOGGER.debug("DiscoAPI query failed for {}: {}", uri, e.toString());
+            LOGGER.debug("[JDK Provider - DiscoAPI Client] query failed for {}: {}", uri, e.toString());
+            return Optional.empty();
         }
+    }
 
-        return Optional.empty();
+    /**
+     * Determines the archive priority of a given package based on its archive type
+     * and operating system family.
+     *
+     * @param pkg the DiscoPackage object containing archive type and OS information.
+     * @return an integer representing the priority; higher values indicate higher priority.
+     */
+    private static int archiveProprity(DiscoPackage pkg) {
+        int p = switch (pkg.archiveType()) {
+            case "tar.gz" -> 3;
+            case "tgz" -> 2;
+            case "zip" -> 1;
+            default -> 0;
+        };
+        return pkg.os() == OSFamily.WINDOWS ? 3 - p : p;
     }
 
     /**
@@ -285,71 +307,42 @@ public final class DiscoApiClient {
         }
     }
 
-    private static Optional<DiscoPackage> selectFromArray(JSONArray arr, OSFamily os, Logger logger) {
-        // Preference order limited to archive types we can extract
-        boolean windows = os == OSFamily.WINDOWS;
-        String[] preferredArchiveOrder = windows
-                ? new String[]{"zip", "tar.gz", "tgz"}
-                : new String[]{"tar.gz", "tgz", "zip"};
-
-        // First pass: build candidates
-        List<JSONObject> candidates = getCandidates(arr);
-        if (candidates.isEmpty()) {
-            logger.debug("DiscoAPI returned no suitable packages.");
-            return Optional.empty();
-        }
-
-        // Choose by archive preference
-        for (String pref : preferredArchiveOrder) {
-            for (JSONObject o : candidates) {
-                String uri = extractDownloadUri(o);
-                String filename = o.optString("filename", null);
-                // Per DiscoAPI behavior the filename is authoritative for determining archive type
-                String archiveType = normalizeArchiveType(
-                        firstNonBlank(
-                                guessArchiveName(filename),
-                                o.optString("archive_type", null),
-                                guessArchiveFromUri(uri)
-                        )
-                );
-                if (archiveType.equals(pref) && isSupportedArchiveType(archiveType)) {
+    private static List<DiscoPackage> getDiscoPackages(JSONArray arr) {
+        return getCandidates(arr)
+                .stream()
+                .map(o -> {
+                    String uri = extractDownloadUri(o);
+                    String filename = o.optString("filename", null);
                     String sha256 = o.optString("sha256", "");
-                    String vendor = o.optString("distribution", "");
-                    return Optional.of(new DiscoPackage(URI.create(uri), sha256, vendor, archiveType, filename));
-                }
-            }
-        }
+                    String distribution = o.optString("distribution", "");
+                    // Per DiscoAPI behavior the filename is authoritative for determining archive type
+                    String archiveType = normalizeArchiveType(
+                            firstNonBlank(
+                                    guessArchiveName(filename),
+                                    o.optString("archive_type", null),
+                                    guessArchiveFromUri(uri)
+                            )
+                    );
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("DiscoAPI returned no suitable packages for preferred archive order, returning first candidate: {}", Arrays.toString(preferredArchiveOrder));
-        }
-
-        // Fallback: first candidate that has a supported archive type
-        for (JSONObject cand : candidates) {
-            String uri = extractDownloadUri(cand);
-            String sha256 = cand.optString("sha256", "");
-            String vendor = cand.optString("distribution", "");
-            String filename = cand.optString("filename", null);
-            String archiveType = normalizeArchiveType(
-                    firstNonBlank(
-                            guessArchiveName(filename),
-                            cand.optString("archive_type", null),
-                            guessArchiveFromUri(uri)
-                    )
-            );
-            if (isSupportedArchiveType(archiveType)) {
-                return Optional.of(new DiscoPackage(URI.create(uri), sha256, vendor, archiveType, filename));
-            }
-        }
-        logger.debug("No candidates with supported archive types were found.");
-        return Optional.empty();
+                    return new DiscoPackage(
+                            URI.create(uri),
+                            sha256,
+                            distribution,
+                            archiveType,
+                            filename,
+                            OSFamily.parse(o.optString("operating_system", "")),
+                            SystemArchitecture.parse(o.optString("architecture", "")),
+                            VersionSpec.parse(o.optString("java_version", "").replaceAll("\\+.*", ""))
+                    );
+                })
+                .toList();
     }
 
     private static List<JSONObject> getCandidates(JSONArray arr) {
         List<JSONObject> candidates = new ArrayList<>();
         for (Object item : arr) {
             if (!(item instanceof JSONObject jsonObject)) {
-                LOGGER.debug("DiscoAPI returned non-object in result array, ignoring: {}", item);
+                LOGGER.debug("[JDK Provider - DiscoAPI Client] non-object in result array, ignoring: {}", item);
                 continue;
             }
 
@@ -357,19 +350,19 @@ public final class DiscoApiClient {
             // as per DiscoAPI docs.
             String pkgType = jsonObject.optString("package_type", "");
             if (!pkgType.equalsIgnoreCase("jdk")) {
-                LOGGER.debug("DiscoAPI returned non-JDK package: {}", jsonObject);
+                LOGGER.debug("[JDK Provider - DiscoAPI Client] non-JDK package: {}", jsonObject);
                 continue;
             }
 
             boolean directlyDownloadable = jsonObject.optBoolean("directly_downloadable", false);
             if (!directlyDownloadable) {
-                LOGGER.debug("DiscoAPI returned package that is not directly downloadable: {}", jsonObject);
+                LOGGER.debug("[JDK Provider - DiscoAPI Client] package is not directly downloadable: {}", jsonObject);
                 continue;
             }
 
             String uri = extractDownloadUri(jsonObject);
             if (uri == null || uri.isBlank()) {
-                LOGGER.debug("DiscoAPI returned package without download link in 'link' object: {}", jsonObject);
+                LOGGER.debug("[JDK Provider - DiscoAPI Client] package without download link in 'link' object: {}", jsonObject);
                 continue;
             }
 

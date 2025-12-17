@@ -51,6 +51,11 @@ class LocalJdkScannerTest {
     void detectsJavaFxAndFeatureVersionViaHeuristics() throws IOException {
         Path fakeJdk = Files.createTempDirectory("fake-jdk-");
 
+        // create
+        Path bin = fakeJdk.resolve("bin");
+        Files.createDirectories(bin);
+        Files.writeString(bin.resolve("java"), "java");
+
         // create jmods/javafx-graphics.jmod to trigger JavaFX detection
         Path jmods = fakeJdk.resolve("jmods");
         Files.createDirectories(jmods);

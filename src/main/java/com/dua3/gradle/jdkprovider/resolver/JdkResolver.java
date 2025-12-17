@@ -39,7 +39,6 @@ public class JdkResolver {
      * Constructs a new instance of the JdkResolver.
      */
     public JdkResolver() {
-        LOGGER.debug("Initializing");
     }
 
     /**
@@ -56,7 +55,7 @@ public class JdkResolver {
      *                         in provisioning a JDK using the DiscoAPI.
      */
     public Optional<JdkInstallation> resolve(JdkSpec jdkSpec, boolean offlineMode) {
-        LOGGER.debug("[Java Resolver] Resolving toolchain for {}", jdkSpec);
+        LOGGER.debug("[JDK Provider - Resolver] Resolving toolchain for {}", jdkSpec);
 
         return new LocalJdkScanner()
                 // first try to find an existing installation
@@ -71,7 +70,7 @@ public class JdkResolver {
                     }
 
                     // use DiscoAPI to lookup and provision a suitable JDK
-                    LOGGER.debug("[Java Resolver] No com.dua3.gradle.jdkprovider.local JDK found, querying DiscoAPI");
+                    LOGGER.debug("[JDK Provider - Resolver] No matching local JDK found, querying DiscoAPI");
 
                     return new DiscoApiClient().findPackage(jdkSpec)
                             .map(pkg -> {
@@ -80,7 +79,7 @@ public class JdkResolver {
                                             .provision(pkg.downloadUri(), pkg.sha256(), pkg.filename(), pkg.archiveType());
                                     return LocalJdkScanner.readJdkSpec(jdkHome).orElse(null);
                                 } catch (InterruptedException e) {
-                                    LOGGER.debug("[Java Resolver] Provisioning interrupted, aborting");
+                                    LOGGER.debug("[JDK Provider - Resolver] Provisioning interrupted, aborting");
                                     Thread.currentThread().interrupt();
                                     return null;
                                 } catch (IOException e) {

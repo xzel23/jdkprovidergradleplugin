@@ -189,6 +189,13 @@ public record JdkSpec(
         private @Nullable Boolean javaFxBundled;
 
         /**
+         * Default constructor.
+         */
+        private Builder() {
+            // nothing to do
+        }
+
+        /**
          * Sets the operating system family for the {@code JdkSpec} being constructed.
          *
          * @param os the {@link OSFamily} to set, or {@code null} to use the default operating system.

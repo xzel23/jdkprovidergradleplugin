@@ -75,6 +75,8 @@ public enum SystemArchitecture {
 
     /**
      * Returns the current system architecture based on the `os.arch` system property.
+     *
+     * @return the enum value referring to the current system architecture
      */
     public static SystemArchitecture current() {
         return CURRENT_ARCHITECTURE;

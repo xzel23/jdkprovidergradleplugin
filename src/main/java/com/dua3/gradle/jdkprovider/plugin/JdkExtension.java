@@ -35,6 +35,13 @@ public abstract class JdkExtension {
     private final Property<Boolean> javaFxBundled;
     private final Property<Boolean> automaticDownload;
 
+    /**
+     * Constructs a new {@code JdkExtension} instance with properties to configure JDK selection.
+     *
+     * @param objects an {@code ObjectFactory} used to create and initialize properties for the JDK
+     *                configuration, such as operating system, system architecture, version,
+     *                vendor, and boolean flags for specific capabilities.
+     */
     @Inject
     public JdkExtension(ObjectFactory objects) {
         this.os = objects.property(OSFamily.class);
@@ -46,30 +53,66 @@ public abstract class JdkExtension {
         this.automaticDownload = objects.property(Boolean.class);
     }
 
+    /**
+     * Retrieves the property representing the operating system family.
+     *
+     * @return a {@code Property<OSFamily>} that holds the operating system family configuration.
+     */
     public Property<OSFamily> getOs() {
         return os;
     }
 
+    /**
+     * Retrieves the system architecture configuration property.
+     *
+     * @return a {@link Property} representing the system architecture, which indicates the
+     *         type of system architecture (e.g., AARCH32, AARCH64, X64, X86_32).
+     */
     public Property<SystemArchitecture> getArch() {
         return arch;
     }
 
+    /**
+     * Retrieves the version of the JDK configured for the extension.
+     *
+     * @return a {@link Property} containing the version as a {@link String}.
+     */
     public Property<String> getVersion() {
         return version;
     }
 
+    /**
+     * Retrieves the property representing the vendor specification of the JVM.
+     *
+     * @return a property instance containing the JVM vendor specification.
+     */
     public Property<JvmVendorSpec> getVendor() {
         return vendor;
     }
 
+    /**
+     * Retrieves the property indicating whether the JDK is capable of building native images.
+     *
+     * @return a {@code Property<Boolean>} representing whether native image capability is supported.
+     */
     public Property<Boolean> getNativeImageCapable() {
         return nativeImageCapable;
     }
 
+    /**
+     * Retrieves the property indicating whether the JavaFX runtime is bundled with the JDK.
+     *
+     * @return a {@code Property<Boolean>} representing whether the JDK includes JavaFX.
+     */
     public Property<Boolean> getJavaFxBundled() {
         return javaFxBundled;
     }
 
+    /**
+     * Retrieves the property indicating whether automatic download of the JDK is enabled.
+     *
+     * @return a {@link Property} containing a Boolean value that specifies if automatic downloading is enabled.
+     */
     public Property<Boolean> getAutomaticDownload() {
         return automaticDownload;
     }

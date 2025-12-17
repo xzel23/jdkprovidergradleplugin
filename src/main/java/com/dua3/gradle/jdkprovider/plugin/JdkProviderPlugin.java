@@ -56,6 +56,13 @@ import java.nio.file.Path;
 public abstract class JdkProviderPlugin implements Plugin<Project> {
 
     /**
+     * Default constructor.
+     */
+    public JdkProviderPlugin() {
+        // nothing to do
+    }
+
+    /**
      * Apply the plugin to the project as described in the plugin class description.
      *
      * @param project the project to apply the plugin to
@@ -97,8 +104,6 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                     .javaFxBundled(extension.getJavaFxBundled().getOrNull())
                     .build();
 
-            logger.debug("afterEvaluate: jdkSpec = {}", jdkSpec);
-
             Boolean automaticDownload = extension.getAutomaticDownload().getOrElse(true);
             boolean gradleOfflineMode = project.getGradle().getStartParameter().isOffline();
             boolean offlineMode = gradleOfflineMode || !automaticDownload;
@@ -106,7 +111,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             JdkInstallation jdkInstallation = new JdkResolver().resolve(jdkSpec, offlineMode)
                     .orElseThrow(() -> new GradleException("No matching JDK found for " + jdkSpec));
 
-            logger.debug("Using JDK: {}", jdkInstallation.jdkHome());
+            logger.debug("[JDK Provider - Plugin] JDK for build: {}", jdkInstallation.jdkHome());
             logger.lifecycle("JDK for this build: {}", jdkInstallation.jdkSpec());
 
             // wire tasks

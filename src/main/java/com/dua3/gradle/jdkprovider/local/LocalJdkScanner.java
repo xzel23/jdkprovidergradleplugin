@@ -14,6 +14,7 @@
 
 package com.dua3.gradle.jdkprovider.local;
 
+import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
@@ -22,6 +23,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.internal.jvm.inspection.JvmVendor;
 import org.gradle.jvm.toolchain.JvmVendorSpec;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,6 +54,72 @@ public final class LocalJdkScanner {
     }
 
     /**
+     * Determines if the current operating system is Windows.
+     *
+     * @return true if the operating system is Windows, false otherwise
+     */
+    private static boolean isWindows() {
+        return OSFamily.current() == OSFamily.WINDOWS;
+    }
+
+    /**
+     * Attempts to locate the Java executable within the specified Java home directory.
+     *
+     * @param home the path to the Java home directory
+     * @return the path to the Java executable if found, or null if not found
+     */
+    private static @Nullable Path findJavaExecutable(Path home) {
+        Path bin = home.resolve("bin");
+        Path java = bin.resolve(isWindows() ? "java.exe" : "java");
+        if (Files.isRegularFile(java)) return java;
+        return null;
+    }
+
+    /**
+     * Detects the home directory of a JDK installation by analyzing the given extracted root directory.
+     * The method searches for well-known JDK layouts, such as
+     * <ol>
+     * <li>The presence of a 'bin/java' executable directly under the extracted root.
+     * <li>A single subdirectory under the extracted root containing a 'bin/java' executable.
+     * <li>macOS-style JDK bundles, where 'Contents/Home/bin/java' exists within a subdirectory.
+     * <li>macOS-style JDK bundles directly under the extracted root ('Contents/Home/bin/java').
+     * </ol>
+     *
+     * @param jdkRoot the root path of the extracted directory to analyze for a JDK home.
+     * @return the path to the JDK home directory if detected; otherwise, null.
+     */
+    public static Path detectJdkHome(Path jdkRoot) {
+        // Common layouts:
+        // 1) extractedRoot/bin/java exists -> home
+        Path direct = findJavaExecutable(jdkRoot);
+        if (direct != null) return jdkRoot;
+
+        // 2) extractedRoot/<single>/bin/java
+        try (var stream = Files.list(jdkRoot)) {
+            var it = stream.filter(Files::isDirectory).iterator();
+            if (it.hasNext()) {
+                Path first = it.next();
+                if (!it.hasNext()) { // single dir
+                    Path nested = findJavaExecutable(first);
+                    if (nested != null) return first;
+                    // 3) macOS bundles: <dir>/Contents/Home/bin/java
+                    Path macHome = first.resolve("Contents").resolve("Home");
+                    Path macJava = findJavaExecutable(macHome);
+                    if (macJava != null) return macHome;
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.debug("could not detect JDK home: {}", jdkRoot, e);
+            throw new RuntimeException(e);
+        }
+        // 4) macOS bundles directly under extractedRoot: Contents/Home
+        Path macHomeDirect = jdkRoot.resolve("Contents").resolve("Home");
+        if (findJavaExecutable(macHomeDirect) != null) return macHomeDirect;
+
+        return null;
+    }
+
+    /**
      * Try to find JDK homes from typical locations: JAVA_HOME and Gradle's installation paths property.
      *
      * @return JDK homes
@@ -64,7 +132,7 @@ public final class LocalJdkScanner {
         if (javaHome != null && !javaHome.isBlank()) {
             Path p = Paths.get(javaHome).toAbsolutePath().normalize();
             if (Files.isDirectory(p)) {
-                LOGGER.debug("[Java Scanner] Found JAVA_HOME={}", p);
+                LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate in JAVA_HOME={}", p);
                 homes.add(p);
             }
         }
@@ -75,35 +143,60 @@ public final class LocalJdkScanner {
             for (String s : gradlePaths.split(",")) {
                 Path p = Paths.get(s.trim()).toAbsolutePath().normalize();
                 if (Files.isDirectory(p)) {
-                    LOGGER.debug("[Java Scanner] Found JDK installation at {}", p);
+                    LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate JDK installation: {}", p);
                     homes.add(p);
                 }
             }
         }
 
-        return homes.stream().map(LocalJdkScanner::readJdkSpec).filter(Optional::isPresent).map(Optional::get).toList();
+        // JDK Provider cache
+        Path cachedJdks = JdkProvisioner.getCachedJdksDir();
+        if (Files.isDirectory(cachedJdks)) {
+            try {
+                Files.list(cachedJdks)
+                        .filter(Files::isDirectory)
+                        .forEach(p -> {
+                            LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate JDK installation in cache dir: {}", p);
+                            homes.add(p);
+                        });
+            } catch (IOException e) {
+                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to scan cache directory {}: {}", cachedJdks, e.getMessage());
+            }
+        }
+
+        return homes.stream()
+                .map(LocalJdkScanner::readJdkSpec)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
     }
 
     /**
      * Attempts to read the JDK spec by reading the release file.
      *
-     * @param jdkHome JDK home
+     * @param jdkDir JDK home
      * @return JDK spec
      */
-    public static Optional<JdkInstallation> readJdkSpec(Path jdkHome) {
+    public static Optional<JdkInstallation> readJdkSpec(Path jdkDir) {
+        Path jdkHome = detectJdkHome(jdkDir);
+        if (jdkHome == null) {
+            LOGGER.debug("[JDK Provider - JDK Scanner] Could not determine JDK home: {}", jdkDir);
+            return Optional.empty();
+        }
+
         int major = -1;
         int minor = -1;
         int patch = -1;
         OSFamily os = null;
         SystemArchitecture arch = null;
         JvmVendorSpec vendor = null;
-        Boolean nativeImageCapable = false;
+        Boolean nativeImageCapable = null;
         boolean javafxBundled = false;
 
         // Try release file
         Path release = jdkHome.resolve("release");
         if (!Files.isRegularFile(release)) {
-            LOGGER.debug("[Java Scanner] JDK at {} does not contain a release file", jdkHome);
+            LOGGER.debug("[JDK Provider - JDK Scanner] JDK at {} does not contain a release file", jdkDir);
             return Optional.empty();
         }
 
@@ -140,23 +233,23 @@ public final class LocalJdkScanner {
             }
 
             if (major < 0) {
-                LOGGER.debug("[Java Scanner] Failed to determine JDK version from release file: {}", release);
+                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK version from release file: {}", release);
                 return Optional.empty();
             }
             if (arch == null) {
-                LOGGER.debug("[Java Scanner] Failed to determine JDK architecture from release file: {}", release);
+                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK architecture from release file: {}", release);
                 return Optional.empty();
             }
             if (os == null) {
-                LOGGER.debug("[Java Scanner] Failed to determine Operating System from release file: {}", release);
+                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine Operating System from release file: {}", release);
                 return Optional.empty();
             }
             if (vendor == null) {
-                LOGGER.debug("[Java Scanner] Failed to determine JDK vendor from release file: {}", release);
+                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK vendor from release file: {}", release);
             }
 
             // If GraalVM flag wasn't present in release file, try to detect native-image tool presence
-            if (nativeImageCapable == null) {
+            if (nativeImageCapable == null || !nativeImageCapable) {
                 Path bin = jdkHome.resolve("bin");
                 boolean hasNativeImage = Files.isExecutable(bin.resolve("native-image"))
                         || Files.isExecutable(bin.resolve("native-image.cmd"))
@@ -169,11 +262,11 @@ public final class LocalJdkScanner {
             VersionSpec version = new VersionSpec(major, minor, patch);
             JdkSpec jdkSpec = new JdkSpec(os, arch, version, vendor, nativeImageCapable, javafxBundled);
             JdkInstallation jdkInstallation = new JdkInstallation(jdkHome, jdkSpec);
-            LOGGER.debug("[Java Scanner] found Installation: {}", jdkInstallation);
+            LOGGER.debug("[JDK Provider - JDK Scanner] found Installation: {}", jdkInstallation);
 
             return Optional.of(jdkInstallation);
         } catch (IOException e) {
-            LOGGER.debug("[Java Scanner] Failed to read JDK release file: {}", release, e);
+            LOGGER.debug("[JDK Provider - JDK Scanner] Failed to read JDK release file: {}", release, e);
             return Optional.empty();
         }
     }
@@ -228,12 +321,10 @@ public final class LocalJdkScanner {
      * @return A list of {@code JdkInstallation} instances that meet the compatibility requirements.
      */
     public List<JdkInstallation> getCompatibleInstalledJdks(JdkSpec jdkSpec) {
-        LOGGER.debug("[Java Scanner] Looking for JDKs compatible with {}", jdkSpec);
+        LOGGER.debug("[JDK Provider - JDK Scanner] Looking for JDKs compatible with {}", jdkSpec);
         return getInstalledJdks()
                 .stream()
-                .filter(jdkInstallation ->
-                        jdkInstallation.jdkSpec().isCompatibleWith(jdkSpec)
-                )
+                .filter(jdkInstallation -> jdkInstallation.jdkSpec().isCompatibleWith(jdkSpec))
                 .toList();
     }
 }

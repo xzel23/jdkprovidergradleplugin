@@ -56,8 +56,59 @@ class DiscoApiClientTest {
                 "    {\n" +
                 "      \"package_type\": \"jdk\",\n" +
                 "      \"distribution\": \"zulu\",\n" +
+                "      \"java_version\": \"21\",\n" +
                 "      \"archive_type\": \"zip\",\n" +
                 "      \"directly_downloadable\": true,\n" +
+                "      \"operating_system\": \"macos\",\n" +
+                "      \"architecture\": \"aarch64\",\n" +
+                "      \"link\": { \n" +
+                "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
+                "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"package_type\": \"jdk\",\n" +
+                "      \"distribution\": \"zulu\",\n" +
+                "      \"java_version\": \"21.0.2\",\n" +
+                "      \"archive_type\": \"zip\",\n" +
+                "      \"directly_downloadable\": true,\n" +
+                "      \"operating_system\": \"macos\",\n" +
+                "      \"architecture\": \"aarch64\",\n" +
+                "      \"link\": { \n" +
+                "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
+                "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"package_type\": \"jdk\",\n" +
+                "      \"distribution\": \"zulu\",\n" +
+                "      \"java_version\": \"21.0.2\",\n" +
+                "      \"archive_type\": \"tar.gz\",\n" +
+                "      \"directly_downloadable\": true,\n" +
+                "      \"operating_system\": \"macos\",\n" +
+                "      \"architecture\": \"aarch64\",\n" +
+                "      \"link\": { \n" +
+                "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
+                "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"package_type\": \"jdk\",\n" +
+                "      \"distribution\": \"zulu\",\n" +
+                "      \"java_version\": \"21.0.2\",\n" +
+                "      \"archive_type\": \"tgz\",\n" +
+                "      \"directly_downloadable\": true,\n" +
+                "      \"operating_system\": \"macos\",\n" +
+                "      \"architecture\": \"aarch64\",\n" +
+                "      \"link\": { \n" +
+                "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
+                "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"package_type\": \"jdk\",\n" +
+                "      \"distribution\": \"zulu\",\n" +
+                "      \"java_version\": \"21.0.1\",\n" +
+                "      \"archive_type\": \"zip\",\n" +
+                "      \"directly_downloadable\": true,\n" +
+                "      \"operating_system\": \"macos\",\n" +
+                "      \"architecture\": \"aarch64\",\n" +
                 "      \"link\": { \n" +
                 "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
                 "      }\n" +
@@ -80,7 +131,9 @@ class DiscoApiClientTest {
         );
 
         assertTrue(pkg.isPresent());
-        assertEquals("zulu", pkg.get().vendor());
+        assertEquals("zulu", pkg.get().distribution());
+        assertEquals("21.0.2", pkg.get().version().toString());
+        assertEquals("tar.gz", pkg.get().archiveType());
         assertTrue(pkg.get().downloadUri().toString().contains(downloadPath));
     }
 
