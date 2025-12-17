@@ -56,6 +56,12 @@ public enum OSFamily {
     WINDOWS;
 
     /**
+     * Represents the pre-determined {@code OSFamily} constant corresponding to the
+     * current operating system of the environment in which the application is running.
+     */
+    private static final OSFamily CURRENT_OS = parse(System.getProperty("os.name").toLowerCase(Locale.ROOT));
+
+    /**
      * Returns the name of this enum constant converted to lowercase.
      *
      * @return the lowercase string representation of this enum constant
@@ -71,7 +77,7 @@ public enum OSFamily {
      * @throws IllegalStateException if the operating system is unknown or unrecognized.
      */
     public static OSFamily current() {
-        return parse(System.getProperty("os.name").toLowerCase(Locale.ROOT));
+        return CURRENT_OS;
     }
 
     /**
