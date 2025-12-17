@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "com.dua3.gradle"
-version = "0.1.0-SNAPSHOT"
+version = "0.1.0-rc"
 
 java {
     toolchain {
@@ -30,10 +30,6 @@ java {
 dependencies {
     // Compile against Gradle public API (needed for resolver SPI types)
     implementation(gradleApi())
-
-    testImplementation(platform("org.junit:junit-bom:5.11.3"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // Lightweight archive extraction for tar/gzip support
     implementation("org.apache.commons:commons-compress:1.28.0")
     // Minimal JSON parsing for DiscoAPI responses
@@ -42,6 +38,10 @@ dependencies {
     testImplementation(gradleTestKit())
     // Mock HTTP server for DiscoAPI tests
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test {
