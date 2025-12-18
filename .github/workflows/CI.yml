@@ -52,6 +52,16 @@ jobs:
       - name: Build
         run: gradle build --stacktrace
 
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports-${{ matrix.os }}-${{ matrix.arch }}
+          if-no-files-found: warn
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+
   publish:
     name: Publish to Gradle Plugin Portal
     needs: build
