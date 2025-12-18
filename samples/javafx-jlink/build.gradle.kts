@@ -35,7 +35,7 @@ jlink {
     val isArm = arch.contains("aarch64") || arch.contains("arm64") || arch.contains("arm")
     if (isWindows && isArm) {
         jpackage {
-            installerType = "zip"
+            installerType = "app-image"
         }
     }
 }
