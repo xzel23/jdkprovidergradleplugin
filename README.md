@@ -68,7 +68,7 @@ jdk {
 }
 ```
 
-Minimal example for a JavaFX build with latest JDK (Kotlin DSL):
+Minimal example for a JavaFX build with latest LTS JDK (Kotlin DSL):
 
 ```kotlin
 jdk {
@@ -97,7 +97,7 @@ This plugin is not compatible with Gradle toolchains, it replaces the Gradle too
 Plugins that execute JDK executables directly, i.e., do not use a JavaExec task, need to be configured manually.
 
 Information about the selected JDK is available after the plugin has been applied to the project through the
-extension properteis `jdk.jdkHome` (type Directory) and `jdk.jdkSpec` (type JdkSpec).
+extension properties `jdk.jdkHome` (type Directory) and `jdk.jdkSpec` (type JdkSpec).
 
 Example how to configure the BadAss JLink plugin:
 
