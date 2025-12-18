@@ -26,18 +26,6 @@ jdk {
 jlink {
     javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
     options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
-
-    // On Windows ARM, create only a ZIP via jpackage (no MSI/EXE) because the required WiX toolset is currently
-    // not available for that platform when running in GitHub Actions. Note that MSI and EXE installers can still
-    // be created on your development machine if you install the WiX toolchain.
-    val isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows
-    val arch = System.getProperty("os.arch")?.lowercase() ?: ""
-    val isArm = arch.contains("aarch64") || arch.contains("arm64") || arch.contains("arm")
-    if (isWindows && isArm) {
-        jpackage {
-            installerType = "zip"
-        }
-    }
 }
 
 application {
