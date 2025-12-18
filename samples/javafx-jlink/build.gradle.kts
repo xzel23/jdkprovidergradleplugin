@@ -26,6 +26,11 @@ jdk {
 jlink {
     javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
     options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
+
+    jpackage {
+        imageName = "HelloFX"
+        installerName = "HelloFXInstaller"
+    }
 }
 
 application {

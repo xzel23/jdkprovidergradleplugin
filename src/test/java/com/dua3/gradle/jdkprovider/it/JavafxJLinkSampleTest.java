@@ -43,14 +43,9 @@ class JavafxJLinkSampleTest {
         assertTrue(projectDir.isDirectory(), "Sample project directory not found: " + projectDir.getAbsolutePath());
 
         try {
-            // do not create an installer on Windows ARM because WiX toolset is not available to the runner
-            String task = (OSFamily.current() == OSFamily.WINDOWS && SystemArchitecture.current() == SystemArchitecture.AARCH64)
-                    ? "jpackageimage"
-                    : "jpackage";
-
             GradleRunner runner = GradleRunner.create()
                     .withProjectDir(projectDir)
-                    .withArguments(task, "--no-build-cache", "--no-configuration-cache", "--stacktrace")
+                    .withArguments("jpackage", "--no-build-cache", "--no-configuration-cache", "--stacktrace")
                     // Make the plugin-under-test available on the classpath (even if the sample does not apply it yet)
                     .withPluginClasspath()
                     .forwardOutput();
