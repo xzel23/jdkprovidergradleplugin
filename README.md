@@ -11,8 +11,7 @@ Key points:
 
 ## Requirements
 
-- Gradle 9.x
-- Java 21 or newer on the machine running Gradle (for the build itself)
+- Java 21 or newer
 
 ## Applying the plugin
 
@@ -36,21 +35,23 @@ plugins {
 
 Configure the plugin via the `jdk` extension. All properties are optional; unspecified values mean "no preference" and will be determined automatically where applicable.
 
-Supported properties (with defaults):
+Supported properties:
 
-- `version: String` — Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`. Default: when not speciefied, the latest available LTS version will be selected.
-- `vendor: org.gradle.jvm.toolchain.JvmVendorSpec` — Specific JDK vendor, e.g. `JvmVendorSpec.ADOPTIUM`, `JvmVendorSpec.ORACLE`, or `JvmVendorSpec.matching("GraalVM")`. Default: no preference (any vendor).
-- `os: com.dua3.gradle.jdkprovider.types.OSFamily` — Target operating system family (`LINUX`, `WINDOWS`, `MACOS`). Default: current OS.
-- `arch: com.dua3.gradle.jdkprovider.types.SystemArchitecture` — Target CPU architecture (e.g. `X64`, `AARCH64`). Default: current architecture.
-- `nativeImageCapable: Boolean` — Require a JDK that is capable of building native images (e.g., GraalVM distributions). Default: false.
-- `javaFxBundled: Boolean` — Require a JDK that bundles JavaFX (`true`) or excludes it (`false`). Default: false.
-- `automaticDownload: Boolean` — Allow automatic download of matching JDKs when not found locally (ignored when Gradle is in offline mode). Default: `true`.
+| Property                                                        | Type                 | Description                                                                              | Default                                           |
+|-----------------------------------------------------------------|----------------------|------------------------------------------------------------------------------------------|---------------------------------------------------|
+| `version`                                                       | `String`             | Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`.                         | None. When empty, latest LTS version is selected. |
+| `vendor`                                                        | `JvmVendorSpec`      | Specific JDK vendor, e.g. `JvmVendorSpec.ADOPTIUM`, `JvmVendorSpec.matching("GraalVM")`. | No preference (any vendor).                       |
+| `os`                                                            | `OSFamily`           | Target operating system family, i.e., `OSFamily.LINUX`.                                  | Current OS.                                       |
+| `arch`                                                          | `SystemArchitecture` | Target CPU architecture (e.g. `X64`, `AARCH64`).                                         | Current architecture.                             |
+| `nativeImageCapable`                                            | `Boolean`            | Require a JDK that is capable of building native images (e.g., GraalVM)                  | `false`                                           |
+| `javaFxBundled`                                                 | `Boolean`            | Require a JDK that bundles JavaFX (`true`) or excludes it (`false`).                     | `false`                                           |
+| `automaticDownload`                                             | `Boolean`            | Allow automatic download of matching JDKs (ignored when Gradle is in offline mode).      | `true`                                            |
 
 Example (Kotlin DSL):
 
 ```kotlin
 jdk {
-    // Choose any 21+ JDK 
+    // Choose any 21+ JDK (will return latest version >21)
     version.set("21+")
     
     // Vendor Adoptium
@@ -67,10 +68,18 @@ jdk {
 }
 ```
 
+Minimal example for a JavaFX build with latest JDK (Kotlin DSL):
+
+```kotlin
+jdk {
+     javaFxBundled.set(true)
+}
+```
+
 What the plugin does:
 
 - Resolves or locates a suitable JDK for your project and exposes it to the Gradle build.
-- Creates a symlink (or a copy if symlinks are unsupported) of the selected JDK inside `build/jdk` of the project.
+- Configures all tasks of type `JavaCompile`. `JavaDoc`, and `JavaExec` to use the resolved JDK
 - Ensures Java compilation uses a forked compiler process using the selected JDK.
 
 ## Rationale
@@ -79,8 +88,28 @@ This plugin provides a more fine‑grained and explicit way to control the JDK u
 
 ## Compatibility and caveats
 
-- Not compatible with Gradle Toolchains. Do not enable Gradle Toolchains in a project that applies this plugin.
-- The plugin requires Gradle 9.x and a host JDK of version 21 or newer.
+### Gradle Toolchains
+
+This plugin is not compatible with Gradle toolchains, it replaces the Gradle toolchain mechanism.
+
+### Plugins that execute JDK executables directly
+
+Plugins that execute JDK executables directly, i.e., do not use a JavaExec task, need to be configured manually.
+
+Information about the selected JDK is available after the plugin has been applied to the project through the
+extension properteis `jdk.jdkHome` (type Directory) and `jdk.jdkSpec` (type JdkSpec).
+
+Example how to configure the BadAss JLink plugin:
+
+```kotlin
+    jlink.javaHome.set( jdk.jdkHome.map { it.asFile.absolutePath })
+```
+
+## Building
+
+- Make sure Java 21+ is installed.
+- Clone the project.
+- Run `./gradlew build` or (`.\gradlew.bat build` on Windows).
 
 ## License
 
