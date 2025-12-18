@@ -14,9 +14,14 @@
 
 package com.dua3.gradle.jdkprovider.plugin;
 
+import com.dua3.gradle.jdkprovider.types.JdkSpec;
+import com.dua3.gradle.jdkprovider.types.VersionSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.Property;
 import org.gradle.jvm.toolchain.JvmVendorSpec;
 
@@ -34,6 +39,9 @@ public abstract class JdkExtension {
     private final Property<Boolean> nativeImageCapable;
     private final Property<Boolean> javaFxBundled;
     private final Property<Boolean> automaticDownload;
+    // read-only properties exposed to users; set internally by the plugin
+    private final DirectoryProperty jdkHome;
+    private final Property<JdkSpec> jdkSpec;
 
     /**
      * Constructs a new {@code JdkExtension} instance with properties to configure JDK selection.
@@ -51,6 +59,8 @@ public abstract class JdkExtension {
         this.nativeImageCapable = objects.property(Boolean.class);
         this.javaFxBundled = objects.property(Boolean.class);
         this.automaticDownload = objects.property(Boolean.class);
+        this.jdkHome = objects.directoryProperty();
+        this.jdkSpec = objects.property(JdkSpec.class);
     }
 
     /**
@@ -115,5 +125,28 @@ public abstract class JdkExtension {
      */
     public Property<Boolean> getAutomaticDownload() {
         return automaticDownload;
+    }
+
+    /**
+     * Read-only provider for the resolved JDK home directory.
+     */
+    public Provider<Directory> getJdkHome() {
+        return jdkHome;
+    }
+
+    /**
+     * Read-only provider for the resolved JDK version specification.
+     */
+    public Provider<JdkSpec> getJdkSpec() {
+        return jdkSpec;
+    }
+
+    // package-private setters used by the plugin to populate read-only values
+    void setJdkHome(java.io.File dir) {
+        this.jdkHome.fileValue(dir);
+    }
+
+    void setJdkSpec(JdkSpec spec) {
+        this.jdkSpec.set(spec);
     }
 }

@@ -23,6 +23,8 @@ jdk {
     javaFxBundled = true
 }
 
+jlink.javaHome.set( jdk.jdkHome.map { it.asFile.absolutePath })
+
 application {
     mainClass.set("com.example.HelloFxJLink")
     mainModule.set("hello_jlink")

@@ -128,6 +128,10 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
             });
+            
+            // set resolved JDK properties in extension (read-only for build scripts)
+            extension.setJdkHome(jdkInstallation.jdkHome().toFile());
+            extension.setJdkSpec(jdkInstallation.jdkSpec());
         });
     }
 }
