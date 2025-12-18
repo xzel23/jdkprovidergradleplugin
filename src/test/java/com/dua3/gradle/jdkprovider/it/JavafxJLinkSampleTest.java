@@ -28,9 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Integration test that attempts to build the samples/javafx-minimal project using Gradle TestKit.
- * The build is expected to fail currently, but this verifies the wiring and provides a starting point
- * for future end-to-end testing without mocks.
+ * Integration test that attempts to build the samples/javafx-jlink project using Gradle TestKit.
+ * The build should create a jpackaged application image.
+ * <p>
+ * If no matching JDK is installed, the build needs a working internet connection.
  */
 class JavafxJLinkSampleTest {
 

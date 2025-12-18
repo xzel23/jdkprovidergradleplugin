@@ -15,7 +15,6 @@
 package com.dua3.gradle.jdkprovider.plugin;
 
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
-import com.dua3.gradle.jdkprovider.types.VersionSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import org.gradle.api.file.Directory;
@@ -129,6 +128,8 @@ public abstract class JdkExtension {
 
     /**
      * Read-only provider for the resolved JDK home directory.
+     *
+     * @return a {@code Provider<Directory>} representing the resolved JDK home directory
      */
     public Provider<Directory> getJdkHome() {
         return jdkHome;
@@ -136,17 +137,34 @@ public abstract class JdkExtension {
 
     /**
      * Read-only provider for the resolved JDK version specification.
+     *
+     * @return a {@code Provider<JdkSpec>} representing the resolved JDK specification
      */
     public Provider<JdkSpec> getJdkSpec() {
         return jdkSpec;
     }
 
-    // package-private setters used by the plugin to populate read-only values
-    void setJdkHome(java.io.File dir) {
-        this.jdkHome.fileValue(dir);
+    /**
+     * Package private setter for the JDK home directory.
+     * <p>
+     * The plugin uses this method internally to populate the JDK home property with a
+     * specific directory path representing the JDK home.
+     *
+     * @param jdkHome the {@link java.io.File} representing the JDK home directory to be set
+     */
+    void setJdkHome(java.io.File jdkHome) {
+        this.jdkHome.fileValue(jdkHome);
     }
 
-    void setJdkSpec(JdkSpec spec) {
-        this.jdkSpec.set(spec);
+    /**
+     * Package private setter for the JDK specification property for this extension.
+     * <p>
+     * The plugin uses this method internally to populate the JDK specification property that
+     * provides information about the JDK used for the build.
+     *
+     * @param jdkSpec the JDK specification to be set, represented as a {@code JdkSpec} instance
+     */
+    void setJdkSpec(JdkSpec jdkSpec) {
+        this.jdkSpec.set(jdkSpec);
     }
 }
