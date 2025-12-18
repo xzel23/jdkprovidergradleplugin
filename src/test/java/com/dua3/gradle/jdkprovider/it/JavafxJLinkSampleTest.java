@@ -14,6 +14,8 @@
 
 package com.dua3.gradle.jdkprovider.it;
 
+import com.dua3.gradle.jdkprovider.types.OSFamily;
+import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -29,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Integration test that attempts to build the samples/javafx-jlink project using Gradle TestKit.
- * The build should create a jpackaged application image.
+ * The build should create an installer (expect on Windows ARM where only an app-image is created).
  * <p>
  * If no matching JDK is installed, the build needs a working internet connection.
  */
@@ -41,9 +43,14 @@ class JavafxJLinkSampleTest {
         assertTrue(projectDir.isDirectory(), "Sample project directory not found: " + projectDir.getAbsolutePath());
 
         try {
+            // do not create an installer on Windows ARM because WiX toolset is not available to the runner
+            String task = (OSFamily.current() == OSFamily.WINDOWS && SystemArchitecture.current() == SystemArchitecture.AARCH64)
+                    ? "jpackageimage"
+                    : "jpackage";
+
             GradleRunner runner = GradleRunner.create()
                     .withProjectDir(projectDir)
-                    .withArguments("jpackage", "--no-build-cache", "--no-configuration-cache", "--stacktrace")
+                    .withArguments(task, "--no-build-cache", "--no-configuration-cache", "--stacktrace")
                     // Make the plugin-under-test available on the classpath (even if the sample does not apply it yet)
                     .withPluginClasspath()
                     .forwardOutput();
