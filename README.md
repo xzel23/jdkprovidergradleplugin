@@ -105,9 +105,57 @@ Example how to configure the BadAss JLink plugin:
     jlink.javaHome.set( jdk.jdkHome.map { it.asFile.absolutePath })
 ```
 
-## Building
+### Create application installers using the jlink-plugin
+
+- If on Windows, read how to install the WiX toolset.
+- Configure both the `application`, `jdk` and `jlink` extensions in your build file.
+- Run the `jpackage` task
+
+An example `build.gradle.kts`:
+
+```kotlin
+    plugins {
+        application
+        id("com.dua3.gradle.jdkprovider") version "0.1.0"
+        id("org.beryx.jlink") version "3.1.5"
+    }
+    
+    jdk {
+        version = "25"
+        javaFxBundled = true
+    }
+
+    application {
+        mainClass.set("com.example.Main")
+        mainModule.set("my_module")
+    }
+
+    jlink {
+        // IMPORTANT: tell the jlink plugin where to find the correct JDK
+        javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
+        
+        options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
+        jpackage {
+            imageName = "MyApplication"
+            installerName = "MyInstaller"
+        }
+    } 
+```
+
+**Installing the WiX toolset on Windows**
+
+- Install [dotnet](https://dotnet.microsoft.com/en-us/download).
+- Install the WiX Toolset*: `dotnet tool install --global wix --version 5.0.2`
+- Install WiX extensions: `wix extension add -g WixToolset.Util.wixext/5.0.2`
+
+(*) Note that I explicitly use version 5.0.2 here as WiX have introduced a "maintenance fee" for users of version 6 or
+above and binaries for newer versions are not freely available anymore.
+
+## Building the plugin
 
 - Make sure Java 21+ is installed.
+- On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer, see below for 
+  instructions. The installation is described above.
 - Clone the project.
 - Run `./gradlew build` or (`.\gradlew.bat build` on Windows).
 
