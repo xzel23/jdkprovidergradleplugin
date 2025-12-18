@@ -41,6 +41,47 @@ jobs:
           architecture: ${{ matrix.arch }}
           cache: gradle
 
+      # Windows ARM: set up .NET and WiX to enable building installers
+      - name: Set up .NET 8.x (Windows ARM)
+        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache NuGet packages (Windows ARM)
+        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
+        id: dotnet-nuget-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\NuGet\Cache
+            ~\.nuget\packages
+          key: nuget-${{ runner.os }}-${{ matrix.arch }}-dotnet-8.0
+
+      - name: Cache .NET global tools (Windows ARM)
+        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
+        id: dotnet-tools-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\.dotnet\tools
+          key: dotnet-tools-${{ runner.os }}-${{ matrix.arch }}-wix-5.0.2
+
+      - name: Ensure dotnet tools path is on PATH (Windows ARM)
+        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
+        shell: pwsh
+        run: echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install WiX v5 (Windows ARM)
+        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' && steps.dotnet-tools-cache.outputs.cache-hit != 'true' }}
+        shell: pwsh
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Install additional WiX tools (Windows ARM)
+        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' && steps.dotnet-tools-cache.outputs.cache-hit != 'true' }}
+        shell: pwsh
+        run: dotnet tool install --global wix --version 5.0.2
+
       - name: Set up Gradle 9.2.1
         uses: gradle/actions/setup-gradle@v4
         with:
