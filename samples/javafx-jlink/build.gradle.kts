@@ -24,8 +24,8 @@ jdk {
 }
 
 jlink {
-    javaHome.set( jdk.jdkHome.map { it.asFile.absolutePath })
-    options.set(setOf("--strip-debug", "--compress", "zip-9", "--no-header-files", "--no-man-pages"))
+    javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
+    options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
 }
 
 application {
