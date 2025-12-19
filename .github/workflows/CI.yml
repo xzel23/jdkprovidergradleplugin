@@ -45,7 +45,7 @@ jobs:
           cache: gradle
 
       # Windows ARM: set up .NET and WiX to enable building installers
-      - name: Set up .NET 8.x (Windows ARM)
+      - name: Set up .NET (Windows ARM)
         if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
         uses: actions/setup-dotnet@v4
         with:
