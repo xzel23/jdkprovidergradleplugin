@@ -13,26 +13,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: linux
-            arch: x64
-            runner: ubuntu-latest
-          - os: linux
-            arch: aarch64
-            runner: ubuntu-24.04-arm
-          - os: mac
-            arch: aarch64
-            runner: macos-14
-          - os: windows
-            arch: x64
-            runner: windows-latest
+#          - os: linux
+#            arch: x64
+#            runner: ubuntu-latest
+#          - os: linux
+#            arch: aarch64
+#            runner: ubuntu-24.04-arm
+#          - os: mac
+#            arch: aarch64
+#            runner: macos-14
+#          - os: windows
+#            arch: x64
+#            runner: windows-latest
           - os: windows
             arch: aarch64
             runner: windows-11-arm
     runs-on: ${{ matrix.runner }}
+
     steps:
+      # Checkout the code
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # Setup Java
       - name: Set up JDK 21 (Zulu)
         uses: actions/setup-java@v4
         with:
@@ -46,42 +49,30 @@ jobs:
         if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
-      - name: Cache NuGet packages (Windows ARM)
+      - name: Install WiX v5 (Global)
         if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
-        id: dotnet-nuget-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\NuGet\Cache
-            ~\.nuget\packages
-          key: nuget-${{ runner.os }}-${{ matrix.arch }}-dotnet-8.0
+        # We use the standard run step. GitHub will handle the shell.
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          echo "$USERPROFILE/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Cache .NET global tools (Windows ARM)
+      - name: Add WiX Extensions
         if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
-        id: dotnet-tools-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\.dotnet\tools
-          key: dotnet-tools-${{ runner.os }}-${{ matrix.arch }}-wix-5.0.2
+        # IMPORTANT: This must be a SEPARATE step from the install step
+        # because GITHUB_PATH updates only take effect in the NEXT step.
+        run: |
+          wix extension add -g WixToolset.Util.wixext/5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
 
-      - name: Ensure dotnet tools path is on PATH (Windows ARM)
+      - name: Verify Path and WiX Version
         if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
-        shell: pwsh
-        run: echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        run: |
+          where wix
+          wix --version
 
-      - name: Install WiX v5 (Windows ARM)
-        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' && steps.dotnet-tools-cache.outputs.cache-hit != 'true' }}
-        shell: pwsh
-        run: dotnet tool install --global wix --version 5.0.2
-
-      - name: Install additional WiX tools (Windows ARM)
-        if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' && steps.dotnet-tools-cache.outputs.cache-hit != 'true' }}
-        shell: pwsh
-        run: dotnet tool install --global wix --version 5.0.2
-
+      # Set up Gradle
       - name: Set up Gradle 9.2.1
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -90,9 +81,11 @@ jobs:
       - name: Verify Gradle
         run: gradle -v
 
+      # Build
       - name: Build
         run: gradle build --stacktrace
 
+      # Upload reports
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v6
@@ -103,6 +96,7 @@ jobs:
             **/build/reports/tests/**
             **/build/test-results/**
 
+  # Publish to Gradle Plugin Portal if cureent revision is tagged
   publish:
     name: Publish to Gradle Plugin Portal
     needs: build
