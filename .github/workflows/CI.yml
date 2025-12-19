@@ -83,7 +83,7 @@ jobs:
 
       # Build
       - name: Build
-        run: gradle build --stacktrace
+        run: gradle build --debug --stacktrace
 
       # Upload reports
       - name: Upload test reports
