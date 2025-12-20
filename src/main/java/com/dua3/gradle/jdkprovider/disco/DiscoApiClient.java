@@ -262,17 +262,17 @@ public final class DiscoApiClient {
 
         Predicate<String> filterNative = s ->
                 nativeImageCapable == null
-                        || (nativeImageCapable == s.contains("graalvm") || s.contains("liberica_native"));
+                        || (nativeImageCapable == (s.contains("graalvm") || s.contains("liberica_native")));
 
         return VENDOR_MAP.entrySet().stream()
                 .filter(filterVendor)
-                .findFirst()
                 .map(Map.Entry::getValue)
                 .map(distributions ->
                         distributions.stream()
                                 .filter(filterNative)
                                 .map(dist -> param("distribution", dist))
                                 .collect(Collectors.joining("&")))
+                .findFirst()
                 .orElse("");
     }
 
