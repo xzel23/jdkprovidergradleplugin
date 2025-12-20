@@ -14,8 +14,6 @@
 
 package com.dua3.gradle.jdkprovider.it;
 
-import com.dua3.gradle.jdkprovider.types.OSFamily;
-import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;

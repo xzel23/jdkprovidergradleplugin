@@ -15,7 +15,7 @@
 plugins {
     application
     id("com.dua3.gradle.jdkprovider")
-    id("org.beryx.jlink") version "3.1.5"
+    id("org.beryx.jlink") version "3.2.0"
 }
 
 jdk {
@@ -24,11 +24,10 @@ jdk {
 }
 
 jlink {
-    javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
+    javaHome = jdk.jdkHome
     options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
 
     jpackage {
-        javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
         imageName = "HelloFX"
         installerName = "HelloFXInstaller"
     }
