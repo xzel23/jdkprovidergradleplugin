@@ -99,17 +99,18 @@ Plugins that execute JDK executables directly, i.e., do not use a JavaExec task,
 Information about the selected JDK is available after the plugin has been applied to the project through the
 extension properties `jdk.jdkHome` (type Directory) and `jdk.jdkSpec` (type JdkSpec).
 
-Example how to configure the BadAss JLink plugin:
+Example how to configure the Badass JLink plugin (use version 3.2.0+):
 
 ```kotlin
-    jlink.javaHome.set( jdk.jdkHome.map { it.asFile.absolutePath })
+    jlink.javaHome = jdk.jdkHome
 ```
 
-### Create application installers using the jlink-plugin
+### Create application installers using the [beryx-jlink-plugin](https://github.com/beryx/badass-jlink-plugin)
 
 - If on Windows, read how to install the WiX toolset.
 - Configure both the `application`, `jdk` and `jlink` extensions in your build file.
 - Run the `jpackage` task
+- IMPORTANT: You need version 3.2.0 of the plugin that contains a fix for resolving the correct `jpackage` executable.
 
 An example `build.gradle.kts`:
 
@@ -117,7 +118,7 @@ An example `build.gradle.kts`:
     plugins {
         application
         id("com.dua3.gradle.jdkprovider") version "0.1.0"
-        id("org.beryx.jlink") version "3.1.5"
+        id("org.beryx.jlink") version "3.2.0"
     }
     
     jdk {
@@ -132,7 +133,7 @@ An example `build.gradle.kts`:
 
     jlink {
         // IMPORTANT: tell the jlink plugin where to find the correct JDK
-        javaHome = jdk.jdkHome.map { it.asFile.absolutePath }
+        javaHome = jdk.jdkHome
         
         options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
         jpackage {
@@ -142,7 +143,10 @@ An example `build.gradle.kts`:
     } 
 ```
 
-**Installing the WiX toolset on Windows**
+**Note:** On Windows ARM, you need at least Gradle 9.2.1 (fixed ARM compatibility on Windows) and JDK 25 (added 
+jpackage compatibility with version 4+ of the WiX toolset; version 3.x does not work on Windows ARM).
+
+**Installing the WiX toolset on Windows (both ARM and x64)**
 
 - Install [dotnet](https://dotnet.microsoft.com/en-us/download).
 - Install the WiX Toolset*: `dotnet tool install --global wix --version 5.0.2`
@@ -150,6 +154,14 @@ An example `build.gradle.kts`:
 
 (*) Note that I explicitly use version 5.0.2 here as WiX have introduced a "maintenance fee" for users of version 6 or
 above and binaries for newer versions are not freely available anymore.
+
+## Known issues
+
+- Automatic download of native image capble JKDs might fail. Workaround: install the JDK manually, the plugin will 
+  select the correct installed JDK.
+- Compatibility with the [beryx-runtime-plugin](https://github.com/beryx/badass-runtime-plugin) has not yet been tested. If you find any issues, please report them 
+  here. If something in the runtime plugin needs to be fixed or changed, I will look into it.
+- Please report any issues to this project's [Issues Page](https://github.com/xzel23/jdkprovidergradleplugin/issues).
 
 ## Building the plugin
 
