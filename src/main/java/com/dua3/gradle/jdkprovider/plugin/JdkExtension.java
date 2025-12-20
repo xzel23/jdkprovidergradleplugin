@@ -33,7 +33,7 @@ public abstract class JdkExtension {
 
     private final Property<OSFamily> os;
     private final Property<SystemArchitecture> arch;
-    private final Property<String> version;
+    private final Property<Object> version;
     private final Property<JvmVendorSpec> vendor;
     private final Property<Boolean> nativeImageCapable;
     private final Property<Boolean> javaFxBundled;
@@ -53,7 +53,7 @@ public abstract class JdkExtension {
     public JdkExtension(ObjectFactory objects) {
         this.os = objects.property(OSFamily.class);
         this.arch = objects.property(SystemArchitecture.class);
-        this.version = objects.property(String.class);
+        this.version = objects.property(Object.class);
         this.vendor = objects.property(JvmVendorSpec.class);
         this.nativeImageCapable = objects.property(Boolean.class);
         this.javaFxBundled = objects.property(Boolean.class);
@@ -84,11 +84,32 @@ public abstract class JdkExtension {
     /**
      * Retrieves the version of the JDK configured for the extension.
      *
-     * @return a {@link Property} containing the version as a {@link String}.
+     * @return a {@link Property} containing the version.
      */
-    public Property<String> getVersion() {
+    public Property<Object> getVersion() {
         return version;
     }
+
+    /**
+     * Set the JDK version.
+     * <p>
+     * This is a convenience method that allows setting the version using an {@code int} argument.
+     *
+     * @param version the JDK version to set
+     */
+    public void setVersion(int version) {
+        this.version.set(version);
+    }
+
+    /**
+     * Set the JDK version.
+     *
+     * @param version the JDK version to set
+     */
+    public void setVersion(String version) {
+        this.version.set(version);
+    }
+
 
     /**
      * Retrieves the property representing the vendor specification of the JVM.

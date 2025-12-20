@@ -97,7 +97,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             // resolve and install JDK into project build dir
             JdkSpec jdkSpec = JdkSpec.builder()
                     .vendor(extension.getVendor().getOrNull())
-                    .version(VersionSpec.parse(extension.getVersion().getOrElse("any")))
+                    .version(VersionSpec.parse(String.valueOf(extension.getVersion().getOrElse("any"))))
                     .os(extension.getOs().getOrNull())
                     .arch(extension.getArch().getOrNull())
                     .nativeImageCapable(extension.getNativeImageCapable().getOrNull())

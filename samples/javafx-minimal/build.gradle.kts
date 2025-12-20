@@ -18,7 +18,7 @@ plugins {
 }
 
 jdk {
-    version = "25"
+    version = 25
     javaFxBundled = true
 }
 
