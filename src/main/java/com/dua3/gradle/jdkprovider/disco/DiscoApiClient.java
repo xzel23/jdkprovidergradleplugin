@@ -139,7 +139,7 @@ public final class DiscoApiClient {
         addIfNonNullOrBlank(params, toQueryParam(query.versionSpec()));
         addIfNonNull(params, "operating_system", query.os());
         addIfNonNullOrBlank(params, toQueryArg(query.arch()));
-        addIfNonNullOrBlank(params, toQueryParam(query.vendor()));
+        addIfNonNullOrBlank(params, toQueryParam(query.vendor(), query.nativeImageCapable()));
         addIfNonNull(params, "javafx_bundled", query.javaFxBundled());
         addIfNonNull(params, "release_status", "ga");
         return URI.create(baseUrl + "?" + String.join("&", params));
@@ -254,12 +254,21 @@ public final class DiscoApiClient {
      * @return a string representing the vendor distributions as query parameters.
      *         Returns an empty string if {@code jvmVendorSpec} is null or no mapping is found.
      */
-    private static String toQueryParam(@Nullable JvmVendorSpec jvmVendorSpec) {
-        if (jvmVendorSpec == null) return "";
+    private static String toQueryParam(@Nullable JvmVendorSpec jvmVendorSpec, @Nullable Boolean nativeImageCapable) {
+        if (jvmVendorSpec == null && nativeImageCapable == null) return "";
 
-        String vendorString = String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT);
+        Predicate<String> nativeImageCapableFilter = s ->
+                nativeImageCapable == null
+                        || (nativeImageCapable == s.contains("graalvm") || s.contains("liberica_native"));
+
+        Predicate<Map.Entry<Predicate<String>, List<String>>> filterVendor = entry ->
+                jvmVendorSpec == null || entry.getKey().test(String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT));
+        Predicate<Map.Entry<Predicate<String>, List<String>>> filterNative = entry ->
+                nativeImageCapable == null || entry.getValue().stream().anyMatch(nativeImageCapableFilter);
+
         return VENDOR_MAP.entrySet().stream()
-                .filter(e -> e.getKey().test(vendorString))
+                .filter(filterVendor)
+                .filter(filterNative)
                 .findFirst()
                 .map(Map.Entry::getValue)
                 .map(distributions ->
