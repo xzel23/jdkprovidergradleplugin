@@ -16,11 +16,71 @@ package com.dua3.gradle.jdkprovider.types;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class VersionSpecTest {
+
+    static Stream<Arguments> matchesProvider() {
+        return Stream.of(
+                // spec, actual, expected result
+                Arguments.of("any", "21.0.1", true),
+                Arguments.of("any", "17", true),
+                Arguments.of("latest", "21.0.1", true),
+                Arguments.of("latest", "17", true),
+                Arguments.of("21", "21", true),
+                Arguments.of("21", "21.0.1", true),
+                Arguments.of("21", "21.1.2", true),
+                Arguments.of("21", "17", false),
+                Arguments.of("21", "17.1", false),
+                Arguments.of("21", "22", false),
+                Arguments.of("21.2", "17", false),
+                Arguments.of("21.2", "21", false),
+                Arguments.of("21.2", "21.1", false),
+                Arguments.of("21.2", "21.2", true),
+                Arguments.of("21.2", "21.3", false),
+                Arguments.of("21.2", "21.2.1", true),
+                Arguments.of("21.0", "21.0.1", true),
+                Arguments.of("21.0", "21.1", false),
+                Arguments.of("21.0.1", "21.0.1", true),
+                Arguments.of("21.0.1", "21.0.2", false),
+                Arguments.of("21+", "21.0.1", true),
+                Arguments.of("21+", "21.2.3", true),
+                Arguments.of("21+", "17", false),
+                Arguments.of("21+", "25", true),
+                Arguments.of("21.2+", "21.2.1", true),
+                Arguments.of("21.2+", "21.3.3", true),
+                Arguments.of("21.2+", "17", false),
+                Arguments.of("21.2+", "25", false),
+                Arguments.of("25", "25.0.1", true),
+                Arguments.of("21.0+", "21.0.1", true),
+                Arguments.of("21.0+", "21.0.5", true),
+                Arguments.of("21.0+", "21.1.0", true),
+                // edge cases
+                Arguments.of("any", null, true),
+                Arguments.of("latest", null, true),
+                Arguments.of("21", null, false),
+                Arguments.of("21.0", "21", false),
+                Arguments.of("21.0.1", "21.0", false),
+                Arguments.of("21.0.1", "21", false),
+                Arguments.of("21.1", "21.0", false),
+                Arguments.of("21.1.1", "21.1.0", false)
+        );
+    }
+
+    @ParameterizedTest
+    @DisplayName("VersionSpec.matches() tests")
+    @MethodSource("matchesProvider")
+    void matches(String specStr, String actualStr, boolean expected) {
+        VersionSpec spec = VersionSpec.parse(specStr);
+        VersionSpec actual = actualStr == null ? null : VersionSpec.parse(actualStr);
+        assertEquals(expected, spec.matches(actual), () -> specStr + " should " + (expected ? "" : "not ") + "match " + actualStr);
+    }
 
     @ParameterizedTest
     @DisplayName("Round-trip parse/toString compatibility for supported formats")

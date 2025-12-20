@@ -226,17 +226,14 @@ public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nul
      *         specification, otherwise {@code false}.
      */
     public boolean matches(@Nullable VersionSpec actual) {
-        if (major == null) {
-            return true; // any
+        if (major == null || major.equals(Integer.MAX_VALUE)) {
+            return true; // any or latest
         }
         if (actual == null) {
             return false;
         }
-        if (major.equals(Integer.MAX_VALUE)) {
-            return true; // latest - accept any actual
-        }
         if (!major.equals(actual.major())) {
-            return false;
+            return Objects.equals(minor, Integer.MAX_VALUE) && actual.major != null && major < actual.major;
         }
 
         // Minor
@@ -246,8 +243,11 @@ public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nul
         if (minor.equals(Integer.MAX_VALUE)) {
             return true; // any minor
         }
-        if (actual.minor() == null || !minor.equals(actual.minor())) {
+        if (actual.minor() == null) {
             return false;
+        }
+        if (!minor.equals(actual.minor())) {
+            return Objects.equals(patch, Integer.MAX_VALUE) && actual.minor != null && minor < actual.minor;
         }
 
         // Patch
