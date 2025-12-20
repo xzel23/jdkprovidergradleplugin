@@ -105,7 +105,7 @@ Example how to configure the Badass JLink plugin (use version 3.2.0+):
     jlink.javaHome = jdk.jdkHome
 ```
 
-### Create application installers using the [beryx-jlink-plugin](https://github.com/beryx/badass-jlink-plugin)
+### [Beryx JLink Plugin](https://github.com/beryx/badass-jlink-plugin) - Create application installers
 
 - If on Windows, read how to install the WiX toolset.
 - Configure both the `application`, `jdk` and `jlink` extensions in your build file.
@@ -155,13 +155,73 @@ jpackage compatibility with version 4+ of the WiX toolset; version 3.x does not 
 (*) Note that I explicitly use version 5.0.2 here as WiX have introduced a "maintenance fee" for users of version 6 or
 above and binaries for newer versions are not freely available anymore.
 
-## Known issues
+### [Gradle plugin for GraalVM Native Image](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html#configuration-toolchains-enabling) - Create native applications
 
-- Automatic download of native image capble JKDs might fail. Workaround: install the JDK manually, the plugin will 
-  select the correct installed JDK.
+Since the GraalVM Native Image plugin requires a JDK with native image support, we need to configure the JDK to support
+native image generation:
+
+```kotlin
+    jdk {
+        nativeImageCapable = true
+    }
+```
+
+This makes sure that a JDK with native image support is installed and used for compilation. But the GraalVM plugin needs
+to be configured using a toolchain, and Gradle is not able to automatically detect the correct JDK with native image support.
+
+Since the downloaded JDK can only be resolved after the evaluation phase, the configuration might look a little messy and has to be done in an afterEvaluate block::
+
+```kotlin
+    project.afterEvaluate {
+        println(jdk.jdkSpec.get().vendor)
+        println(jdk.jdkHome.get())
+    
+        val jdkSpec = jdk.jdkSpec.get()
+        val jdkHome = jdk.jdkHome.get()
+    
+        val jimd = object : JavaInstallationMetadata {
+            override fun getLanguageVersion(): JavaLanguageVersion =
+                JavaLanguageVersion.of(jdkSpec.versionSpec.major!!)
+    
+            override fun getJavaRuntimeVersion(): String = jdkSpec.versionSpec.toString()
+    
+            override fun getJvmVersion(): String = jdkSpec.versionSpec.toString()
+    
+            override fun getVendor(): String = jdkSpec.vendor.toString()
+    
+            override fun getInstallationPath(): Directory = jdkHome
+    
+            override fun isCurrentJvm(): Boolean = false
+        }
+    
+        val javaLauncher = object : JavaLauncher {
+            override fun getMetadata(): JavaInstallationMetadata = jimd
+    
+            override fun getExecutablePath(): RegularFile {
+                val javaProvider: Provider<File> = project.provider { jdkHome.asFile.resolve("bin/java") }
+                return project.layout.file(javaProvider).get()
+            }
+        }
+    
+        graalvmNative {
+            binaries {
+                named("main") {
+                    imageName.set("hello_native")
+                    mainClass.set("com.example.HelloNative")
+                    this.javaLauncher.set(javaLauncher)
+                }
+            }
+        }
+    }   
+```
+
+Have a look at the helloNative sample project to see how to put everything together.
+
+### Known issues
+
 - Compatibility with the [beryx-runtime-plugin](https://github.com/beryx/badass-runtime-plugin) has not yet been tested. If you find any issues, please report them 
   here. If something in the runtime plugin needs to be fixed or changed, I will look into it.
-- Please report any issues to this project's [Issues Page](https://github.com/xzel23/jdkprovidergradleplugin/issues).
+- Please report any other issues to this project's [Issues Page](https://github.com/xzel23/jdkprovidergradleplugin/issues).
 
 ## Building the plugin
 

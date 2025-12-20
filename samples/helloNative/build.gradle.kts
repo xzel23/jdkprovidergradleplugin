@@ -18,10 +18,10 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion
 plugins {
     application
     id("com.dua3.gradle.jdkprovider")
-    id("org.graalvm.buildtools.native") version "0.11.1"}
+    id("org.graalvm.buildtools.native") version "0.11.1"
+}
 
 jdk {
-    version = "21"
     nativeImageCapable = true
 }
 
