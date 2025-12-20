@@ -166,7 +166,7 @@ above and binaries for newer versions are not freely available anymore.
 ## Building the plugin
 
 - Make sure Java 21+ is installed.
-- On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer, see below for 
+- On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer, see above for 
   instructions. The installation is described above.
 - Clone the project.
 - Run `./gradlew build` or (`.\gradlew.bat build` on Windows).
