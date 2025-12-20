@@ -12,9 +12,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see https://www.gnu.org/licenses/
 
-import org.gradle.jvm.toolchain.JavaInstallationMetadata
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
 plugins {
     application
     id("com.dua3.gradle.jdkprovider")
@@ -30,42 +27,12 @@ application {
 }
 
 project.afterEvaluate {
-    println(jdk.jdkSpec.get().vendor)
-    println(jdk.jdkHome.get())
-
-    val jdkSpec = jdk.jdkSpec.get()
-    val jdkHome = jdk.jdkHome.get()
-
-    val jimd = object : JavaInstallationMetadata {
-        override fun getLanguageVersion(): JavaLanguageVersion =
-            JavaLanguageVersion.of(jdkSpec.versionSpec.major!!)
-
-        override fun getJavaRuntimeVersion(): String = jdkSpec.versionSpec.toString()
-
-        override fun getJvmVersion(): String = jdkSpec.versionSpec.toString()
-
-        override fun getVendor(): String = jdkSpec.vendor.toString()
-
-        override fun getInstallationPath(): Directory = jdkHome
-
-        override fun isCurrentJvm(): Boolean = false
-    }
-
-    val javaLauncher = object : JavaLauncher {
-        override fun getMetadata(): JavaInstallationMetadata = jimd
-
-        override fun getExecutablePath(): RegularFile {
-            val javaProvider: Provider<File> = project.provider { jdkHome.asFile.resolve("bin/java") }
-            return project.layout.file(javaProvider).get()
-        }
-    }
-
     graalvmNative {
         binaries {
             named("main") {
                 imageName.set("hello_native")
                 mainClass.set("com.example.HelloNative")
-                this.javaLauncher.set(javaLauncher)
+                this.javaLauncher.set(jdk.getJavaLauncher(project))
             }
         }
     }

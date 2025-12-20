@@ -17,11 +17,16 @@ package com.dua3.gradle.jdkprovider.plugin;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
+import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.Property;
+import org.gradle.jvm.toolchain.JavaInstallationMetadata;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JvmVendorSpec;
 
 import javax.inject.Inject;
@@ -163,6 +168,69 @@ public abstract class JdkExtension {
      */
     public Provider<JdkSpec> getJdkSpec() {
         return jdkSpec;
+    }
+
+    /**
+     * Retrieves a provider for the Java launcher associated with the specified project.
+     * The Java launcher provides access to metadata about a specific JDK installation
+     * and the path to the Java executable.
+     *
+     * @param project the project for which the Java launcher is being retrieved;
+     *                used to resolve paths and providers within the project scope
+     * @return a {@code Provider<JavaLauncher>} that supplies the Java launcher,
+     *         which includes JDK metadata and the executable path
+     */
+    public Provider<JavaLauncher> getJavaLauncher(Project project) {
+        return jdkSpec.map(spec -> {
+            final JdkSpec finalJdkSpec = spec;
+            final Directory finalJdkHome = jdkHome.get();
+
+            JavaInstallationMetadata jimd = new JavaInstallationMetadata() {
+                @Override
+                public JavaLanguageVersion getLanguageVersion() {
+                    return JavaLanguageVersion.of(finalJdkSpec.versionSpec().major());
+                }
+
+                @Override
+                public String getJavaRuntimeVersion() {
+                    return finalJdkSpec.versionSpec().toString();
+                }
+
+                @Override
+                public String getJvmVersion() {
+                    return finalJdkSpec.versionSpec().toString();
+                }
+
+                @Override
+                public String getVendor() {
+                    return finalJdkSpec.vendor().toString();
+                }
+
+                @Override
+                public Directory getInstallationPath() {
+                    return finalJdkHome;
+                }
+
+                @Override
+                public boolean isCurrentJvm() {
+                    return false;
+                }
+            };
+
+            return new JavaLauncher() {
+                @Override
+                public JavaInstallationMetadata getMetadata() {
+                    return jimd;
+                }
+
+                @Override
+                public RegularFile getExecutablePath() {
+                    Provider<java.io.File> javaProvider =
+                            project.provider(() -> finalJdkHome.getAsFile().toPath().resolve("bin/java").toFile());
+                    return project.getLayout().file(javaProvider).get();
+                }
+            };
+        });
     }
 
     /**

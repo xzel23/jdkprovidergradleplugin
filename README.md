@@ -169,50 +169,20 @@ native image generation:
 This makes sure that a JDK with native image support is installed and used for compilation. But the GraalVM plugin needs
 to be configured using a toolchain, and Gradle is not able to automatically detect the correct JDK with native image support.
 
-Since the downloaded JDK can only be resolved after the evaluation phase, the configuration might look a little messy and has to be done in an afterEvaluate block::
+Since the downloaded JDK can only be resolved after the evaluation phase, the configuration needs to be done in an afterEvaluate block:
 
 ```kotlin
-    project.afterEvaluate {
-        println(jdk.jdkSpec.get().vendor)
-        println(jdk.jdkHome.get())
-    
-        val jdkSpec = jdk.jdkSpec.get()
-        val jdkHome = jdk.jdkHome.get()
-    
-        val jimd = object : JavaInstallationMetadata {
-            override fun getLanguageVersion(): JavaLanguageVersion =
-                JavaLanguageVersion.of(jdkSpec.versionSpec.major!!)
-    
-            override fun getJavaRuntimeVersion(): String = jdkSpec.versionSpec.toString()
-    
-            override fun getJvmVersion(): String = jdkSpec.versionSpec.toString()
-    
-            override fun getVendor(): String = jdkSpec.vendor.toString()
-    
-            override fun getInstallationPath(): Directory = jdkHome
-    
-            override fun isCurrentJvm(): Boolean = false
-        }
-    
-        val javaLauncher = object : JavaLauncher {
-            override fun getMetadata(): JavaInstallationMetadata = jimd
-    
-            override fun getExecutablePath(): RegularFile {
-                val javaProvider: Provider<File> = project.provider { jdkHome.asFile.resolve("bin/java") }
-                return project.layout.file(javaProvider).get()
+project.afterEvaluate {
+    graalvmNative {
+        binaries {
+            named("main") {
+                imageName.set("hello_native")
+                mainClass.set("com.example.HelloNative")
+                this.javaLauncher.set(jdk.getJavaLauncher(project))
             }
         }
-    
-        graalvmNative {
-            binaries {
-                named("main") {
-                    imageName.set("hello_native")
-                    mainClass.set("com.example.HelloNative")
-                    this.javaLauncher.set(javaLauncher)
-                }
-            }
-        }
-    }   
+    }
+}
 ```
 
 Have a look at the helloNative sample project to see how to put everything together.
