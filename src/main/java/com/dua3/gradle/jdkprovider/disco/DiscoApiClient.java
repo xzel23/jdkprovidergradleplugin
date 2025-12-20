@@ -257,22 +257,20 @@ public final class DiscoApiClient {
     private static String toQueryParam(@Nullable JvmVendorSpec jvmVendorSpec, @Nullable Boolean nativeImageCapable) {
         if (jvmVendorSpec == null && nativeImageCapable == null) return "";
 
-        Predicate<String> nativeImageCapableFilter = s ->
+        Predicate<Map.Entry<Predicate<String>, List<String>>> filterVendor = entry ->
+                jvmVendorSpec == null || entry.getKey().test(String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT));
+
+        Predicate<String> filterNative = s ->
                 nativeImageCapable == null
                         || (nativeImageCapable == s.contains("graalvm") || s.contains("liberica_native"));
 
-        Predicate<Map.Entry<Predicate<String>, List<String>>> filterVendor = entry ->
-                jvmVendorSpec == null || entry.getKey().test(String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT));
-        Predicate<Map.Entry<Predicate<String>, List<String>>> filterNative = entry ->
-                nativeImageCapable == null || entry.getValue().stream().anyMatch(nativeImageCapableFilter);
-
         return VENDOR_MAP.entrySet().stream()
                 .filter(filterVendor)
-                .filter(filterNative)
                 .findFirst()
                 .map(Map.Entry::getValue)
                 .map(distributions ->
                         distributions.stream()
+                                .filter(filterNative)
                                 .map(dist -> param("distribution", dist))
                                 .collect(Collectors.joining("&")))
                 .orElse("");
