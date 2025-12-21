@@ -143,7 +143,7 @@ public final class DiscoApiClient {
         // filter results
         addIfNonBlank(params, query.stableReleaseOnly() ? "release_status=ga" : "");
         addIfNonBlank(params, query.longTermSupportOnly() ? "term_of_support=lts" : "");
-        addIfNonBlank(params,query.freeForProductionUseOnly() ? "free_to_use_in_production=true" : "");
+        addIfNonBlank(params, query.freeForProductionUseOnly() ? "free_to_use_in_production=true" : "");
         // operating system, system architecture, etc.
         addIfNonBlank(params, toQueryParam(query.versionSpec()));
         params.add("operating_system=" + query.os().toString());

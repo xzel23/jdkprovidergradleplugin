@@ -225,7 +225,7 @@ public final class LocalJdkScanner {
                 }
             }
 
-            if (version== null) {
+            if (version == null) {
                 LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK version from release file: {}", release);
                 return Optional.empty();
             }
@@ -244,10 +244,9 @@ public final class LocalJdkScanner {
             // If no GraalVM flag was present in the release file, try to detect native-image tool presence
             if (nativeImageCapable == null || !nativeImageCapable) {
                 Path bin = jdkHome.resolve("bin");
-                boolean hasNativeImage = Files.isExecutable(bin.resolve("native-image"))
+                nativeImageCapable = Files.isExecutable(bin.resolve("native-image"))
                         || Files.isExecutable(bin.resolve("native-image.cmd"))
                         || Files.isExecutable(bin.resolve("native-image.exe"));
-                nativeImageCapable = hasNativeImage;
             }
 
             JdkSpec jdkSpec = new JdkSpec(os, arch, version, vendor, nativeImageCapable, javafxBundled);

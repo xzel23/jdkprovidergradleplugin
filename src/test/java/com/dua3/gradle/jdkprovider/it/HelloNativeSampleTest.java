@@ -52,7 +52,7 @@ class HelloNativeSampleTest {
             assertNotNull(result.task(":compileJava"));
             TaskOutcome outcome = result.task(":compileJava").getOutcome();
             assertTrue(outcome == SUCCESS || outcome == UP_TO_DATE, "Build failed with outcome: " + outcome);
-            
+
             assertTrue(result.getOutput().contains("native_image"), "Output should indicate native-image capability");
         } catch (Exception e) {
             fail("Build failed unexpectedly: " + e.getMessage());

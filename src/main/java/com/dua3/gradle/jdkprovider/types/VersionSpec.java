@@ -30,7 +30,8 @@ import java.util.Objects;
  * @param patch the patch version component, null when not specified, Integer.MAX_VALUE when used with "+"
  */
 @NullMarked
-public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nullable Integer patch) implements Comparable<VersionSpec> {
+public record VersionSpec(@Nullable Integer major, @Nullable Integer minor,
+                          @Nullable Integer patch) implements Comparable<VersionSpec> {
 
     /**
      * Canonical constructor.
@@ -202,7 +203,8 @@ public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nul
                     int major = Integer.parseInt(parts[0]);
                     int minor = Integer.parseInt(parts[1]);
                     int patch = Integer.parseInt(parts[2]);
-                    if (major < 0 || minor < 0 || patch < 0) throw new IllegalArgumentException("negative version component: " + s);
+                    if (major < 0 || minor < 0 || patch < 0)
+                        throw new IllegalArgumentException("negative version component: " + s);
                     return new VersionSpec(major, minor, patch);
                 }
                 default -> throw new IllegalArgumentException("invalid version format: " + s);

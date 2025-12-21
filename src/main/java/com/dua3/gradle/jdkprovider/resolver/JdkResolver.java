@@ -19,7 +19,6 @@ import com.dua3.gradle.jdkprovider.local.JdkInstallation;
 import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
 import com.dua3.gradle.jdkprovider.types.JdkQuery;
-import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import org.gradle.api.GradleException;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;

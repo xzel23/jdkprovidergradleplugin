@@ -13,6 +13,17 @@ import java.util.function.BiPredicate;
  * Represents a query interface for specifying requirements or characteristics of a JDK in terms
  * of operating system, architecture, vendor, and additional configurations such as support for
  * native images and JavaFX.
+ *
+ * @param os                       the target operating system family; defaults to the current OS if null
+ * @param arch                     the target system architecture; defaults to the current architecture if null
+ * @param nativeImageCapable       indicates whether the JDK should support native image compilation
+ * @param javaFxBundled            indicates whether the JDK should include JavaFX libraries
+ * @param versionSpec              the version specification for the JDK; defaults to latest version if null
+ * @param stableReleaseOnly        indicates whether only stable releases should be considered
+ * @param longTermSupportOnly      indicates whether only long-term support (LTS) versions should be considered
+ * @param freeForProductionUseOnly indicates whether only JDKs free for production use should be considered
+ * @param vendorSpec               the JVM vendor specification; defaults to matching any vendor if null
+ * @param libcType                 the type of C standard library (e.g., "glibc", "musl"); defaults to detected libc type if null
  */
 @RecordBuilder
 public record JdkQuery(
@@ -32,6 +43,9 @@ public record JdkQuery(
         JvmVendorSpec vendorSpec,
         String libcType
 ) {
+    /**
+     * Initializes query with defaults for unspecified attributes
+     */
     public JdkQuery {
         os = os != null ? os : OSFamily.current();
         arch = arch != null ? arch : SystemArchitecture.current();
@@ -53,8 +67,8 @@ public record JdkQuery(
      * otherwise {@code false}.
      */
     public static boolean isCompatible(JdkSpec jdkSpec, JdkQuery jdkQuery) {
-        return compatibleOrLog("Operating System", jdkSpec.os(), jdkQuery.os(), (act, req) -> req == null || Objects.equals(act, req))
-                && compatibleOrLog("Architecture", jdkSpec.arch(), jdkQuery.arch(), (act, req) -> req == null || Objects.equals(act, req))
+        return compatibleOrLog("Operating System", jdkSpec.os(), jdkQuery.os(), (act, req) -> req == null || act == req)
+                && compatibleOrLog("Architecture", jdkSpec.arch(), jdkQuery.arch(), (act, req) -> req == null || act == req)
                 && compatibleOrLog("Native Image Capable", jdkSpec.nativeImageCapable(), jdkQuery.nativeImageCapable())
                 && compatibleOrLog("JavaFX Bundled", jdkSpec.javaFxBundled(), jdkQuery.javaFxBundled())
                 && compatibleOrLog("Version", VersionSpec.parse(jdkSpec.version()), jdkQuery.versionSpec(), (act, req) -> req == null || req.matches(act))

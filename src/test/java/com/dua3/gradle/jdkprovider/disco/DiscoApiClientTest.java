@@ -15,8 +15,6 @@
 package com.dua3.gradle.jdkprovider.disco;
 
 import com.dua3.gradle.jdkprovider.types.JdkQueryBuilder;
-import com.dua3.gradle.jdkprovider.types.JdkSpec;
-import com.dua3.gradle.jdkprovider.types.JdkSpecBuilder;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import com.dua3.gradle.jdkprovider.types.VersionSpec;
