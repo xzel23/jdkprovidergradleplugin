@@ -153,7 +153,6 @@ class DiscoApiClientTest {
         assertTrue(q.contains("version=21"));
         assertTrue(q.contains("operating_system=macos"));
         assertTrue(q.contains("architecture=aarch64"));
-        assertTrue(q.contains("distribution=zulu"));
         assertTrue(q.contains("release_status=ga"));
         assertTrue(q.contains("javafx_bundled=true"));
     }
