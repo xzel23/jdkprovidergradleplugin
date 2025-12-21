@@ -7,6 +7,7 @@ import org.gradle.jvm.toolchain.JvmVendorSpec;
 import org.gradle.jvm.toolchain.internal.DefaultJvmVendorSpec;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
@@ -63,7 +64,7 @@ public record JdkQuery(
         longTermSupportOnly = Objects.requireNonNullElse(longTermSupportOnly, Boolean.FALSE);
         freeForProductionUseOnly = Objects.requireNonNullElse(freeForProductionUseOnly, Boolean.TRUE);
         vendorSpec = Objects.requireNonNullElse(vendorSpec, DefaultJvmVendorSpec.any());
-        libcType = Objects.requireNonNullElseGet(libcType, JdkQuery::getLicCType);
+        libcType = Objects.requireNonNullElse(libcType, getLibcType(os));
     }
 
     /**
@@ -129,17 +130,15 @@ public record JdkQuery(
      *
      * @return "musl" if the operating system is determined to be Alpine Linux, otherwise "glibc".
      */
-    private static String getLicCType() {
-        if (OSFamily.current() != OSFamily.LINUX) {
+    private static String getLibcType(OSFamily os) {
+        if (os != OSFamily.LINUX) {
             return "";
         }
 
-        String libcType = System.getProperty("os.name").toLowerCase();
-        if (libcType.contains("alpine")) {
+        if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("alpine")) {
             return "musl";
         } else {
             return "glibc";
         }
     }
-
 }

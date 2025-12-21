@@ -149,7 +149,7 @@ public final class DiscoApiClient {
         addIfNonBlank(params, toQueryParam(query.versionSpec()));
         params.add("operating_system=" + query.os().toString());
         addIfNonBlank(params, toQueryArg(query.arch()));
-        addIfNonNull(params, "libc_type", query.libcType());
+        addIfNonBlank(params, "libc_type", query.libcType());
         // features
         addIfNonBlank(params, query.javaFxBundled() ? "javafx_bundled=true" : "");
         addIfNonBlank(params, toQueryParam(query.vendorSpec(), query.nativeImageCapable()));
@@ -469,12 +469,11 @@ public final class DiscoApiClient {
      * The method creates a query parameter string using the name and the string representation of the value,
      * and appends it to the parameter list.
      *
-     * @param <T>   the type of the value to be checked for null and converted to a string
      * @param params the list of query parameters to which the name-value pair should be added
      * @param name   the name of the query parameter
      * @param value  the value to be associated with the name; the value is added only if it is non-null
      */
-    private static void addIfNonNull(List<String> params, String name, String value) {
+    private static void addIfNonBlank(List<String> params, String name, String value) {
         if (!value.isBlank()) {
             params.add(param(name, value));
         }
