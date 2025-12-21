@@ -188,7 +188,7 @@ public abstract class JdkExtension {
             JavaInstallationMetadata jimd = new JavaInstallationMetadata() {
                 @Override
                 public JavaLanguageVersion getLanguageVersion() {
-                    return JavaLanguageVersion.of(finalJdkSpec.version());
+                    return JavaLanguageVersion.of(finalJdkSpec.version().replaceFirst("\\..*", ""));
                 }
 
                 @Override
