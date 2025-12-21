@@ -14,7 +14,9 @@
 
 package com.dua3.gradle.jdkprovider.disco;
 
+import com.dua3.gradle.jdkprovider.types.JdkQueryBuilder;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
+import com.dua3.gradle.jdkprovider.types.JdkSpecBuilder;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import com.dua3.gradle.jdkprovider.types.VersionSpec;
@@ -121,11 +123,11 @@ class DiscoApiClientTest {
         DiscoApiClient client = new DiscoApiClient(baseUrl);
 
         var pkg = client.findPackage(
-                JdkSpec.builder()
-                        .version(VersionSpec.parse("21"))
+                JdkQueryBuilder.builder()
+                        .versionSpec(VersionSpec.parse("21"))
                         .os(OSFamily.MACOS)
                         .arch(SystemArchitecture.AARCH64)
-                        .vendor(JvmVendorSpec.AZUL)
+                        .vendorSpec(JvmVendorSpec.AZUL)
                         .javaFxBundled(false)
                         .build()
         );
@@ -141,11 +143,11 @@ class DiscoApiClientTest {
     void buildsQueryWithJavaFxBundled() {
         DiscoApiClient client = new DiscoApiClient();
         URI uri = client.buildPackagesQueryUrl(
-                JdkSpec.builder()
-                        .version(VersionSpec.parse("21"))
+                JdkQueryBuilder.builder()
+                        .versionSpec(VersionSpec.parse("21"))
                         .os(OSFamily.MACOS)
                         .arch(SystemArchitecture.AARCH64)
-                        .vendor(JvmVendorSpec.AZUL)
+                        .vendorSpec(JvmVendorSpec.AZUL)
                         .javaFxBundled(true)
                         .build()
         );

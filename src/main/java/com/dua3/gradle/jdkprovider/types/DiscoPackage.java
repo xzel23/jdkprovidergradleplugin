@@ -12,11 +12,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see https://www.gnu.org/licenses/
 
-package com.dua3.gradle.jdkprovider.disco;
-
-import com.dua3.gradle.jdkprovider.types.OSFamily;
-import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
-import com.dua3.gradle.jdkprovider.types.VersionSpec;
+package com.dua3.gradle.jdkprovider.types;
 
 import java.net.URI;
 
@@ -45,4 +41,5 @@ public record DiscoPackage(
         String filename,
         OSFamily os,
         SystemArchitecture archticture,
-        VersionSpec version) {}
+        VersionSpec version
+) {}

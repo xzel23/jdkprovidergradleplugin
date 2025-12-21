@@ -14,6 +14,8 @@
 
 package com.dua3.gradle.jdkprovider.disco;
 
+import com.dua3.gradle.jdkprovider.types.DiscoPackage;
+import com.dua3.gradle.jdkprovider.types.JdkQuery;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
@@ -128,20 +130,29 @@ public final class DiscoApiClient {
      *              vendor, and additional attributes like whether JavaFX is bundled.
      * @return a {@link URI} representing the complete query URL with the specified parameters.
      */
-    URI buildPackagesQueryUrl(JdkSpec query) {
+    URI buildPackagesQueryUrl(JdkQuery query) {
         List<String> params = new ArrayList<>();
-        params.add("directly_downloadable=true");
+
+        // package type
         params.add("package_type=jdk");
-        params.add("free_to_use_in_production=true");
+        // download options
+        params.add("directly_downloadable=true");
         params.add("archive_type=tar.gz");
         params.add("archive_type=tgz");
         params.add("archive_type=zip");
-        addIfNonNullOrBlank(params, toQueryParam(query.versionSpec()));
-        addIfNonNull(params, "operating_system", query.os());
-        addIfNonNullOrBlank(params, toQueryArg(query.arch()));
-        addIfNonNullOrBlank(params, toQueryParam(query.vendor(), query.nativeImageCapable()));
-        addIfNonNull(params, "javafx_bundled", query.javaFxBundled());
-        addIfNonNull(params, "release_status", "ga");
+        // filter results
+        addIfNonBlank(params, query.stableReleaseOnly() ? "release_status=ga" : "");
+        addIfNonBlank(params, query.longTermSupportOnly() ? "term_of_support=lts" : "");
+        addIfNonBlank(params,query.freeForProductionUseOnly() ? "free_to_use_in_production=true" : "");
+        // operating system, system architecture, etc.
+        addIfNonBlank(params, toQueryParam(query.versionSpec()));
+        params.add("operating_system=" + query.os().toString());
+        addIfNonBlank(params, toQueryArg(query.arch()));
+        addIfNonNull(params, "libc_type", query.libcType());
+        // features
+        addIfNonBlank(params, query.javaFxBundled() ? "javafx_bundled=true" : "");
+        addIfNonBlank(params, toQueryParam(query.vendorSpec(), query.nativeImageCapable()));
+
         return URI.create(baseUrl + "?" + String.join("&", params));
     }
 
@@ -154,14 +165,14 @@ public final class DiscoApiClient {
      * If no matching package is found or an error occurs during the API query, an empty 
      * {@code Optional} is returned.
      *
-     * @param jdkSpec the {@link JdkSpec} instance containing parameters used to query the Disco API.
+     * @param jdkQuery the {@link JdkSpec} instance containing parameters used to query the Disco API.
      *                This includes fields like operating system, architecture, version preferences, 
      *                and vendor specifications.
      * @return an {@link Optional} containing the selected {@link DiscoPackage} if a matching 
      *         package is found; otherwise, an empty {@code Optional}.
      */
-    public Optional<DiscoPackage> findPackage(JdkSpec jdkSpec) {
-        URI uri = buildPackagesQueryUrl(jdkSpec);
+    public Optional<DiscoPackage> findPackage(JdkQuery jdkQuery) {
+        URI uri = buildPackagesQueryUrl(jdkQuery);
         LOGGER.debug("[JDK Provider - DiscoAPI Client] Querying: {}", uri);
         try {
             JSONArray arr = getJsonArray(uri);
@@ -225,8 +236,8 @@ public final class DiscoApiClient {
      *         Returns specific formats based on the presence or absence of minor
      *         and patch versions in the given {@link VersionSpec}.
      */
-    private static String toQueryParam(@Nullable VersionSpec versionSpec) {
-        if (versionSpec == null || versionSpec.major() == null) {
+    private static String toQueryParam(VersionSpec versionSpec) {
+        if (versionSpec.major() == null) {
             return "version_by_definition=latest_lts";
         }
         if (versionSpec.major() == Integer.MAX_VALUE) {
@@ -461,8 +472,8 @@ public final class DiscoApiClient {
      * @param name   the name of the query parameter
      * @param value  the value to be associated with the name; the value is added only if it is non-null
      */
-    private static <T> void addIfNonNull(List<String> params, String name, @Nullable T value) {
-        if (value != null) {
+    private static <T> void addIfNonNull(List<String> params, String name, String value) {
+        if (!value.isBlank()) {
             params.add(param(name, value.toString()));
         }
     }
@@ -477,7 +488,7 @@ public final class DiscoApiClient {
      * @param queryParam the query parameter to be added to the list; it will be added only if it
      *                   is non-null and not blank
      */
-    private static void addIfNonNullOrBlank(List<String> params, String queryParam) {
+    private static void addIfNonBlank(List<String> params, String queryParam) {
         if (queryParam != null && !queryParam.isBlank()) {
             params.add(queryParam);
         }

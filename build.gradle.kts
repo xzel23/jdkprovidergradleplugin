@@ -29,12 +29,16 @@ java {
 }
 
 dependencies {
+    annotationProcessor("io.soabase.record-builder:record-builder-processor:51")
+    compileOnly("io.soabase.record-builder:record-builder-core:51")
+
     // Compile against Gradle public API (needed for resolver SPI types)
     implementation(gradleApi())
     // Lightweight archive extraction for tar/gzip support
     implementation("org.apache.commons:commons-compress:1.28.0")
     // Minimal JSON parsing for DiscoAPI responses
     implementation("org.json:json:20240303")
+
     // Gradle TestKit and project builder for functional/unit tests
     testImplementation(gradleTestKit())
     // Mock HTTP server for DiscoAPI tests

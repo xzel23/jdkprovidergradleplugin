@@ -18,6 +18,7 @@ import com.dua3.gradle.jdkprovider.disco.DiscoApiClient;
 import com.dua3.gradle.jdkprovider.local.JdkInstallation;
 import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
+import com.dua3.gradle.jdkprovider.types.JdkQuery;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import org.gradle.api.GradleException;
 import org.gradle.api.logging.Logger;
@@ -46,7 +47,7 @@ public class JdkResolver {
      * for compatible local JDK installations and, if none are found, attempts to provision a
      * JDK using the DiscoAPI, provided offline mode is disabled.
      *
-     * @param jdkSpec      the specification of the JDK version and features required.
+     * @param jdkQuery      the specification of the JDK version and features required.
      * @param offlineMode  a flag indicating whether the resolution process should avoid
      *                     network communication and rely only on local installations.
      * @return an {@code Optional} containing a {@link JdkInstallation} that meets the
@@ -54,12 +55,12 @@ public class JdkResolver {
      * @throws GradleException if the toolchain cannot be resolved due to offline mode or failure
      *                         in provisioning a JDK using the DiscoAPI.
      */
-    public Optional<JdkInstallation> resolve(JdkSpec jdkSpec, boolean offlineMode) {
-        LOGGER.debug("[JDK Provider - Resolver] Resolving toolchain for {}", jdkSpec);
+    public Optional<JdkInstallation> resolve(JdkQuery jdkQuery, boolean offlineMode) {
+        LOGGER.debug("[JDK Provider - Resolver] Resolving toolchain for {}", jdkQuery);
 
         return new LocalJdkScanner()
                 // first try to find an existing installation
-                .getCompatibleInstalledJdks(jdkSpec)
+                .getCompatibleInstalledJdks(jdkQuery)
                 .stream()
                 .findFirst()
                 // then try downloading using DiscoAPI
@@ -72,7 +73,7 @@ public class JdkResolver {
                     // use DiscoAPI to look up and provision a suitable JDK
                     LOGGER.debug("[JDK Provider - Resolver] No matching local JDK found, querying DiscoAPI");
 
-                    return new DiscoApiClient().findPackage(jdkSpec)
+                    return new DiscoApiClient().findPackage(jdkQuery)
                             .map(pkg -> {
                                 try {
                                     Path jdkHome = new JdkProvisioner()

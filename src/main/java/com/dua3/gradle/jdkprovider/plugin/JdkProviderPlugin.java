@@ -16,7 +16,10 @@ package com.dua3.gradle.jdkprovider.plugin;
 
 import com.dua3.gradle.jdkprovider.local.JdkInstallation;
 import com.dua3.gradle.jdkprovider.resolver.JdkResolver;
+import com.dua3.gradle.jdkprovider.types.JdkQuery;
+import com.dua3.gradle.jdkprovider.types.JdkQueryBuilder;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
+import com.dua3.gradle.jdkprovider.types.JdkSpecBuilder;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.VersionSpec;
 import org.gradle.api.GradleException;
@@ -95,21 +98,21 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
 
         project.afterEvaluate(p -> {
             // resolve and install JDK into project build dir
-            JdkSpec jdkSpec = JdkSpec.builder()
-                    .vendor(extension.getVendor().getOrNull())
-                    .version(VersionSpec.parse(String.valueOf(extension.getVersion().getOrElse("any"))))
+            JdkQuery jdkQuery = JdkQueryBuilder.builder()
+                    .vendorSpec(extension.getVendor().getOrNull())
+                    .versionSpec(VersionSpec.parse(String.valueOf(extension.getVersion().getOrElse("any"))))
                     .os(extension.getOs().getOrNull())
                     .arch(extension.getArch().getOrNull())
-                    .nativeImageCapable(extension.getNativeImageCapable().getOrNull())
-                    .javaFxBundled(extension.getJavaFxBundled().getOrNull())
+                    .nativeImageCapable(extension.getNativeImageCapable().getOrElse(false))
+                    .javaFxBundled(extension.getJavaFxBundled().getOrElse(false))
                     .build();
 
             Boolean automaticDownload = extension.getAutomaticDownload().getOrElse(true);
             boolean gradleOfflineMode = project.getGradle().getStartParameter().isOffline();
             boolean offlineMode = gradleOfflineMode || !automaticDownload;
 
-            JdkInstallation jdkInstallation = new JdkResolver().resolve(jdkSpec, offlineMode)
-                    .orElseThrow(() -> new GradleException("No matching JDK found for " + jdkSpec));
+            JdkInstallation jdkInstallation = new JdkResolver().resolve(jdkQuery, offlineMode)
+                    .orElseThrow(() -> new GradleException("No matching JDK found for " + jdkQuery));
 
             logger.debug("[JDK Provider - Plugin] JDK for build: {}", jdkInstallation.jdkHome());
             logger.lifecycle("JDK for this build: {}", jdkInstallation.jdkSpec());

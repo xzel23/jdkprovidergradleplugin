@@ -14,7 +14,10 @@
 
 package com.dua3.gradle.jdkprovider.local;
 
+import com.dua3.gradle.jdkprovider.types.JdkQuery;
+import com.dua3.gradle.jdkprovider.types.JdkQueryBuilder;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
+import com.dua3.gradle.jdkprovider.types.JdkSpecBuilder;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import com.dua3.gradle.jdkprovider.types.VersionSpec;
@@ -82,15 +85,15 @@ class LocalJdkScannerTest {
 
         LocalJdkScanner scanner = new LocalJdkScanner();
 
-        JdkSpec jdkSpec = JdkSpec.builder()
-                .version(VersionSpec.parse("25"))
+        JdkQuery jdkQuery = JdkQueryBuilder.builder()
+                .versionSpec(VersionSpec.parse("25"))
                 .os(OSFamily.MACOS)
                 .arch(SystemArchitecture.AARCH64)
-                .vendor(JvmVendorSpec.AZUL)
+                .vendorSpec(JvmVendorSpec.AZUL)
                 .javaFxBundled(true)
                 .build();
 
-        List<JdkInstallation> found = scanner.getCompatibleInstalledJdks(jdkSpec);
+        List<JdkInstallation> found = scanner.getCompatibleInstalledJdks(jdkQuery);
         assertTrue(found.stream().map(JdkInstallation::jdkHome).anyMatch(fakeJdk::equals));
     }
 }

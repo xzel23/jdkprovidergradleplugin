@@ -15,14 +15,13 @@
 package com.dua3.gradle.jdkprovider.local;
 
 import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
+import com.dua3.gradle.jdkprovider.types.JdkQuery;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
-import com.dua3.gradle.jdkprovider.types.VersionSpec;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.internal.jvm.inspection.JvmVendor;
-import org.gradle.jvm.toolchain.JvmVendorSpec;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -185,12 +184,10 @@ public final class LocalJdkScanner {
             return Optional.empty();
         }
 
-        int major = -1;
-        int minor = -1;
-        int patch = -1;
+        String version = null;
         OSFamily os = null;
         SystemArchitecture arch = null;
-        JvmVendorSpec vendor = null;
+        String vendor = null;
         Boolean nativeImageCapable = null;
         boolean javafxBundled = false;
 
@@ -219,12 +216,7 @@ public final class LocalJdkScanner {
 
                 // process attributes
                 switch (attribute) {
-                    case "JAVA_VERSION" -> {
-                        String[] parts = value.split("\\.");
-                        major = parseVersionPart(parts, 0, -1);
-                        minor = parseVersionPart(parts, 1, 0);
-                        patch = parseVersionPart(parts, 2, 0);
-                    }
+                    case "JAVA_VERSION" -> version = value;
                     case "OS_NAME" -> os = OSFamily.parse(value);
                     case "OS_ARCH" -> arch = SystemArchitecture.parse(value);
                     case "IMPLEMENTOR" -> vendor = getVendorFromImplementor(value);
@@ -233,7 +225,7 @@ public final class LocalJdkScanner {
                 }
             }
 
-            if (major < 0) {
+            if (version== null) {
                 LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK version from release file: {}", release);
                 return Optional.empty();
             }
@@ -255,12 +247,9 @@ public final class LocalJdkScanner {
                 boolean hasNativeImage = Files.isExecutable(bin.resolve("native-image"))
                         || Files.isExecutable(bin.resolve("native-image.cmd"))
                         || Files.isExecutable(bin.resolve("native-image.exe"));
-                if (hasNativeImage) {
-                    nativeImageCapable = true;
-                }
+                nativeImageCapable = hasNativeImage;
             }
 
-            VersionSpec version = new VersionSpec(major, minor, patch);
             JdkSpec jdkSpec = new JdkSpec(os, arch, version, vendor, nativeImageCapable, javafxBundled);
             JdkInstallation jdkInstallation = new JdkInstallation(jdkHome, jdkSpec);
             LOGGER.debug("[JDK Provider - JDK Scanner] found Installation: {}", jdkInstallation);
@@ -289,10 +278,8 @@ public final class LocalJdkScanner {
      * @param value The identifier string representing the implementor (e.g., from the release file).
      * @return The display name of the vendor associated with the implementor, or an appropriate default value.
      */
-    private static JvmVendorSpec getVendorFromImplementor(String value) {
-        String displayName = JvmVendor.fromString(value).getDisplayName();
-        // Use Gradle's matching to allow flexible matching of vendor strings
-        return JvmVendorSpec.matching(displayName);
+    private static String getVendorFromImplementor(String value) {
+        return JvmVendor.fromString(value).getDisplayName();
     }
 
     /**
@@ -318,14 +305,14 @@ public final class LocalJdkScanner {
      * Filters the list of installed JDKs to identify those that are compatible based on
      * the provided {@link JdkSpec} instance.
      *
-     * @param jdkSpec The {@link JdkSpec} to match against.
+     * @param jdkQuery The {@link JdkSpec} to match against.
      * @return A list of {@code JdkInstallation} instances that meet the compatibility requirements.
      */
-    public List<JdkInstallation> getCompatibleInstalledJdks(JdkSpec jdkSpec) {
-        LOGGER.debug("[JDK Provider - JDK Scanner] Looking for JDKs compatible with {}", jdkSpec);
+    public List<JdkInstallation> getCompatibleInstalledJdks(JdkQuery jdkQuery) {
+        LOGGER.debug("[JDK Provider - JDK Scanner] Looking for JDKs compatible with {}", jdkQuery);
         return getInstalledJdks()
                 .stream()
-                .filter(jdkInstallation -> jdkInstallation.jdkSpec().isCompatibleWith(jdkSpec))
+                .filter(jdkInstallation -> JdkQuery.isCompatible(jdkInstallation.jdkSpec(), jdkQuery))
                 .toList();
     }
 }

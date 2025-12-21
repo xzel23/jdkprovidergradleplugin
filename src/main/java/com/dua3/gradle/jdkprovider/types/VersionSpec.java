@@ -115,6 +115,17 @@ public record VersionSpec(@Nullable Integer major, @Nullable Integer minor, @Nul
     }
 
     /**
+     * Creates a {@code VersionSpec} instance representing the latest version.
+     * The latest version is defined as having the maximum possible major version value,
+     * with minor and patch versions unspecified.
+     *
+     * @return a {@code VersionSpec} instance representing the latest version.
+     */
+    public static VersionSpec latest() {
+        return new VersionSpec(Integer.MAX_VALUE, null, null);
+    }
+
+    /**
      * Parses a version string into a {@code VersionSpec} object.
      * The method supports the following version formats:
      * <ul>
