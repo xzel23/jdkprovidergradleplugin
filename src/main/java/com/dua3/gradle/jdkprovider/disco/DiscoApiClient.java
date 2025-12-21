@@ -23,6 +23,7 @@ import com.dua3.gradle.jdkprovider.types.VersionSpec;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.jvm.toolchain.JvmVendorSpec;
+import org.gradle.jvm.toolchain.internal.DefaultJvmVendorSpec;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jspecify.annotations.Nullable;
@@ -173,14 +174,14 @@ public final class DiscoApiClient {
      */
     public Optional<DiscoPackage> findPackage(JdkQuery jdkQuery) {
         URI uri = buildPackagesQueryUrl(jdkQuery);
-        LOGGER.debug("[JDK Provider - DiscoAPI Client] Querying: {}", uri);
+        LOGGER.info("[JDK Provider - DiscoAPI Client] Querying: {}", uri);
         try {
             JSONArray arr = getJsonArray(uri);
             return getDiscoPackages(arr).stream()
                     .filter(pkg -> isSupportedArchiveType(pkg.archiveType()))
                     .max(Comparator.comparing(DiscoPackage::version).thenComparing(DiscoApiClient::archiveProprity));
         } catch (IOException e) {
-            LOGGER.debug("[JDK Provider - DiscoAPI Client] query failed for {}: {}", uri, e.toString());
+            LOGGER.info("[JDK Provider - DiscoAPI Client] query failed for {}: {}", uri, e.toString());
             return Optional.empty();
         }
     }
@@ -269,7 +270,8 @@ public final class DiscoApiClient {
         if (jvmVendorSpec == null && nativeImageCapable == null) return "";
 
         Predicate<Map.Entry<Predicate<String>, List<String>>> filterVendor = entry ->
-                jvmVendorSpec == null || entry.getKey().test(String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT));
+                jvmVendorSpec == null || jvmVendorSpec == DefaultJvmVendorSpec.any()
+                        || entry.getKey().test(String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT));
 
         Predicate<String> filterNative = s ->
                 nativeImageCapable == null
@@ -278,13 +280,13 @@ public final class DiscoApiClient {
         return VENDOR_MAP.entrySet().stream()
                 .filter(filterVendor)
                 .map(Map.Entry::getValue)
-                .map(distributions ->
+                .flatMap(distributions ->
                         distributions.stream()
                                 .filter(filterNative)
-                                .map(dist -> param("distribution", dist))
-                                .collect(Collectors.joining("&")))
-                .findFirst()
-                .orElse("");
+                                .filter(s -> !s.isBlank())
+                )
+                .map(dist -> param("distribution", dist))
+                .collect(Collectors.joining("&"));
     }
 
     private static JSONArray getJsonArray(URI uri) throws IOException {
@@ -472,7 +474,7 @@ public final class DiscoApiClient {
      * @param name   the name of the query parameter
      * @param value  the value to be associated with the name; the value is added only if it is non-null
      */
-    private static <T> void addIfNonNull(List<String> params, String name, String value) {
+    private static void addIfNonNull(List<String> params, String name, String value) {
         if (!value.isBlank()) {
             params.add(param(name, value));
         }

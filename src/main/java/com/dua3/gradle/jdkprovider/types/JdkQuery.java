@@ -4,6 +4,7 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 
 import org.gradle.api.logging.Logging;
 import org.gradle.jvm.toolchain.JvmVendorSpec;
+import org.gradle.jvm.toolchain.internal.DefaultJvmVendorSpec;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
@@ -61,7 +62,7 @@ public record JdkQuery(
         stableReleaseOnly = Objects.requireNonNullElse(stableReleaseOnly, Boolean.TRUE);
         longTermSupportOnly = Objects.requireNonNullElse(longTermSupportOnly, Boolean.FALSE);
         freeForProductionUseOnly = Objects.requireNonNullElse(freeForProductionUseOnly, Boolean.TRUE);
-        vendorSpec = Objects.requireNonNullElse(vendorSpec, JvmVendorSpec.matching(""));
+        vendorSpec = Objects.requireNonNullElse(vendorSpec, DefaultJvmVendorSpec.any());
         libcType = Objects.requireNonNullElseGet(libcType, JdkQuery::getLicCType);
     }
 
