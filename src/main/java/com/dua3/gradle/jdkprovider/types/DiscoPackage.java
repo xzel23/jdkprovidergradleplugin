@@ -24,14 +24,15 @@ import java.net.URI;
  * Instances of this record can be used to encapsulate metadata for software packages
  * or other distributable artifacts.
  *
- * @param downloadUri   the URI from which the package can be downloaded
- * @param sha256        the SHA-256 checksum of the package, useful for verifying file integrity
- * @param distribution  the name of the distribution or source associated with the package
- * @param archiveType   the type of archive (e.g., "zip", "tar.gz") that the package is stored in
- * @param filename      the filename of the package as it would appear when downloaded
- * @param os            the operating system family for which this package is designed
- * @param archticture   the system architecture that this package is compatible with
- * @param version       the version specification of the package
+ * @param downloadUri  the URI from which the package can be downloaded
+ * @param sha256       the SHA-256 checksum of the package, useful for verifying file integrity
+ * @param distribution the name of the distribution or source associated with the package
+ * @param archiveType  the type of archive (e.g., "zip", "tar.gz") that the package is stored in
+ * @param filename     the filename of the package as it would appear when downloaded
+ * @param version      the version specification of the package
+ * @param os           the operating system family for which this package is designed
+ * @param archticture  the system architecture that this package is compatible with
+ * @param libcType     the type of C library (e.g., "musl", "glibc") that the package is compatible with
  */
 public record DiscoPackage(
         URI downloadUri,
@@ -39,7 +40,6 @@ public record DiscoPackage(
         String distribution,
         String archiveType,
         String filename,
-        OSFamily os,
+        VersionSpec version, OSFamily os,
         SystemArchitecture archticture,
-        VersionSpec version
-) {}
+        String libcType) {}

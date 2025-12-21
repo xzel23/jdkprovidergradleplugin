@@ -64,34 +64,28 @@ public final class DiscoApiClient {
     private static final int READ_TIMEOUT_MS = 15_000;
     private static final int RETRIES = 2;
 
-    /**
-     * A mapping of predicates to lists of vendor aliases used for identifying and transforming
-     * vendor-related information in the Disco API client. Each entry in the map consists of a
-     * predicate, generated from a regular expression, and a corresponding list of
-     * distribution identifiers that are used by that vendor.
-     * <p>
-     * The map is statically initialized and immutable, providing a predetermined set of
-     * vendor mappings at runtime. Each predicate is applied to a candidate vendor string to
-     * determine if any of the associated aliases match.
-     */
-    private static final Map<Predicate<String>, List<String>> VENDOR_MAP = Map.ofEntries(
-            Map.entry(Pattern.compile("aoj|adoptopenjdk").asPredicate(), List.of("aoj_openj9", "aoj")),
-            Map.entry(Pattern.compile("alibaba").asPredicate(), List.of("dragonwell")),
-            Map.entry(Pattern.compile("amazon|corretto").asPredicate(), List.of("corretto")),
-            Map.entry(Pattern.compile("azul|zulu").asPredicate(), List.of("zulu")),
-            Map.entry(Pattern.compile("bellsoft|liberica").asPredicate(), List.of("liberica_native", "liberica")),
-            Map.entry(Pattern.compile("community").asPredicate(), List.of("ojdk_build", "trava")),
-            Map.entry(Pattern.compile("temurin|adoptium|eclipse[ _]foundation").asPredicate(), List.of("temurin")),
-            Map.entry(Pattern.compile("gluon").asPredicate(), List.of("gluon_graalvm")),
-            Map.entry(Pattern.compile("huawei").asPredicate(), List.of("bisheng")),
-            Map.entry(Pattern.compile("ibm|semeru|international business machines corporation").asPredicate(), List.of("semeru_certified", "semeru")),
-            Map.entry(Pattern.compile("jbr|jetbrains").asPredicate(), List.of("jetbrains")),
-            Map.entry(Pattern.compile("microsoft").asPredicate(), List.of("microsoft")),
-            Map.entry(Pattern.compile("open_logic").asPredicate(), List.of("openlogic")),
-            Map.entry(Pattern.compile("oracle").asPredicate(), List.of("graalvm_ce11", "graalvm_ce16", "graalvm_ce17", "graalvm_ce19", "graalvm_ce8", "graalvm_community", "graalvm", "oracle_open_jdk", "oracle")),
-            Map.entry(Pattern.compile("red_hat").asPredicate(), List.of("mandrel", "redhat")),
-            Map.entry(Pattern.compile("sap").asPredicate(), List.of("sap_machine")),
-            Map.entry(Pattern.compile("tencent|kona").asPredicate(), List.of("kona"))
+    private static final Map<String, String> VENDOR_MAP = Map.ofEntries(
+             Map.entry("aoj", "adoptopenjdk"),
+             Map.entry("dragonwell", "alibaba"),
+             Map.entry("corretto", "amazon"),
+             Map.entry("zulu", "azul"),
+             Map.entry("liberica", "bellsoft"),
+             Map.entry("ojdk_build", "community"),
+             Map.entry("trava", "community"),
+             Map.entry("temurin", "eclipse"),
+             Map.entry("gluon", "gluon"),
+             Map.entry("bisheng", "huawei"),
+             Map.entry("semeru", "ibm"),
+             Map.entry("jetbrains", "jetbrains"),
+             Map.entry("jbr", "jetbrains"),
+             Map.entry("microsoft", "microsoft"),
+             Map.entry("open_logic", "openlogic"),
+             Map.entry("graalvm", "oracle"),
+             Map.entry("oracle", "oracle"),
+             Map.entry("mandrel", "redhat"),
+             Map.entry("redhat", "red_hat"),
+             Map.entry("sap_machine", "sap"),
+             Map.entry("kona", "tencent")
     );
 
     /**
@@ -152,7 +146,6 @@ public final class DiscoApiClient {
         addIfNonBlank(params, "libc_type", query.libcType());
         // features
         addIfNonBlank(params, query.javaFxBundled() ? "javafx_bundled=true" : "");
-        addIfNonBlank(params, toQueryParam(query.vendorSpec(), query.nativeImageCapable()));
 
         return URI.create(baseUrl + "?" + String.join("&", params));
     }
@@ -179,11 +172,32 @@ public final class DiscoApiClient {
             JSONArray arr = getJsonArray(uri);
             return getDiscoPackages(arr).stream()
                     .filter(pkg -> isSupportedArchiveType(pkg.archiveType()))
-                    .max(Comparator.comparing(DiscoPackage::version).thenComparing(DiscoApiClient::archiveProprity));
+                    .filter(pkg -> pkg.os() == jdkQuery.os())
+                    .filter(pkg -> pkg.archticture() == jdkQuery.arch())
+                    .filter(pkg -> pkg.libcType().isBlank() || pkg.libcType().equals(jdkQuery.libcType()))
+                    .filter(pkg -> jdkQuery.vendorSpec().matches(getVendorFromDistribution(pkg)))
+                    .max(Comparator.comparing(DiscoPackage::libcType, Comparator.reverseOrder())
+                            .thenComparing(DiscoPackage::version)
+                            .thenComparing(DiscoApiClient::archiveProprity)
+                    );
         } catch (IOException e) {
             LOGGER.info("[JDK Provider - DiscoAPI Client] query failed for {}: {}", uri, e.toString());
             return Optional.empty();
         }
+    }
+
+    private String getVendorFromDistribution(DiscoPackage pkg) {
+
+        String vs = VENDOR_MAP.get(pkg.distribution());
+        if (vs != null) {
+            return vs;
+        }
+
+        return VENDOR_MAP.entrySet().stream()
+                .filter(entry -> pkg.distribution().contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse("unknown");
     }
 
     /**
@@ -256,39 +270,6 @@ public final class DiscoApiClient {
         return "version=" + versionSpec.major() + "." + versionSpec.minor() + "." + versionSpec.patch();
     }
 
-    /**
-     * Converts the given {@link JvmVendorSpec} instance into a query parameter string.
-     * This method maps the vendor specification to a set of predefined distributions
-     * and constructs a query parameter string using those distributions.
-     *
-     * @param jvmVendorSpec the {@link JvmVendorSpec} instance representing the vendor specification.
-     *                      If null, the method returns an empty string.
-     * @return a string representing the vendor distributions as query parameters.
-     *         Returns an empty string if {@code jvmVendorSpec} is null or no mapping is found.
-     */
-    private static String toQueryParam(@Nullable JvmVendorSpec jvmVendorSpec, @Nullable Boolean nativeImageCapable) {
-        if (jvmVendorSpec == null && nativeImageCapable == null) return "";
-
-        Predicate<Map.Entry<Predicate<String>, List<String>>> filterVendor = entry ->
-                jvmVendorSpec == null || jvmVendorSpec == DefaultJvmVendorSpec.any()
-                        || entry.getKey().test(String.valueOf(jvmVendorSpec).toLowerCase(Locale.ROOT));
-
-        Predicate<String> filterNative = s ->
-                nativeImageCapable == null
-                        || (nativeImageCapable == (s.contains("graalvm") || s.contains("liberica_native")));
-
-        return VENDOR_MAP.entrySet().stream()
-                .filter(filterVendor)
-                .map(Map.Entry::getValue)
-                .flatMap(distributions ->
-                        distributions.stream()
-                                .filter(filterNative)
-                                .filter(s -> !s.isBlank())
-                )
-                .map(dist -> param("distribution", dist))
-                .collect(Collectors.joining("&"));
-    }
-
     private static JSONArray getJsonArray(URI uri) throws IOException {
         try (HttpClient http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(CONNETION_TIMEOUT_MS))
@@ -344,16 +325,20 @@ public final class DiscoApiClient {
                             )
                     );
 
+                    VersionSpec version = VersionSpec.parse(o.optString("java_version", "").replaceAll("\\+.*", ""));
+                    OSFamily os = OSFamily.parse(o.optString("operating_system", ""));
+                    SystemArchitecture architecture = SystemArchitecture.parse(o.optString("architecture", ""));
+                    String libcType = o.optString("libc_type", "");
+
                     return new DiscoPackage(
                             URI.create(uri),
                             sha256,
                             distribution,
                             archiveType,
                             filename,
-                            OSFamily.parse(o.optString("operating_system", "")),
-                            SystemArchitecture.parse(o.optString("architecture", "")),
-                            VersionSpec.parse(o.optString("java_version", "").replaceAll("\\+.*", ""))
-                    );
+                            version, os,
+                            architecture,
+                            libcType);
                 })
                 .toList();
     }
