@@ -474,7 +474,7 @@ public final class DiscoApiClient {
      */
     private static <T> void addIfNonNull(List<String> params, String name, String value) {
         if (!value.isBlank()) {
-            params.add(param(name, value.toString()));
+            params.add(param(name, value));
         }
     }
 

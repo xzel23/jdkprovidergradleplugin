@@ -193,17 +193,17 @@ public abstract class JdkExtension {
 
                 @Override
                 public String getJavaRuntimeVersion() {
-                    return finalJdkSpec.version().toString();
+                    return finalJdkSpec.version();
                 }
 
                 @Override
                 public String getJvmVersion() {
-                    return finalJdkSpec.version().toString();
+                    return finalJdkSpec.version();
                 }
 
                 @Override
                 public String getVendor() {
-                    return finalJdkSpec.vendor().toString();
+                    return finalJdkSpec.vendor();
                 }
 
                 @Override

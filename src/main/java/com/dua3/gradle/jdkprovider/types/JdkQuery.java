@@ -40,6 +40,17 @@ public record JdkQuery(
 ) {
     /**
      * Initializes the query with defaults for unspecified attributes
+     *
+     * @param os                       the target operating system family; defaults to the current OS if null
+     * @param arch                     the target system architecture; defaults to the current architecture if null
+     * @param nativeImageCapable       indicates whether the JDK should support native image compilation
+     * @param javaFxBundled            indicates whether the JDK should include JavaFX libraries
+     * @param versionSpec              the version specification for the JDK; defaults to latest version if null
+     * @param stableReleaseOnly        indicates whether only stable releases should be considered
+     * @param longTermSupportOnly      indicates whether only long-term support (LTS) versions should be considered
+     * @param freeForProductionUseOnly indicates whether only JDKs free for production use should be considered
+     * @param vendorSpec               the JVM vendor specification; defaults to matching any vendor if null
+     * @param libcType                 the type of C standard library (e.g., "glibc", "musl"); defaults to detected libc type if null
      */
     public JdkQuery {
         os = Objects.requireNonNullElse(os, OSFamily.current());
