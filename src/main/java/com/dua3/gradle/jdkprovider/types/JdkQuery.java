@@ -29,16 +29,11 @@ import java.util.function.BiPredicate;
 public record JdkQuery(
         OSFamily os,
         SystemArchitecture arch,
-        @RecordBuilder.Initializer(value = "FALSE", source = Boolean.class)
         Boolean nativeImageCapable,
-        @RecordBuilder.Initializer(value = "FALSE", source = Boolean.class)
         Boolean javaFxBundled,
         VersionSpec versionSpec,
-        @RecordBuilder.Initializer(value = "TRUE", source = Boolean.class)
         Boolean stableReleaseOnly,
-        @RecordBuilder.Initializer(value = "FALSE", source = Boolean.class)
         Boolean longTermSupportOnly,
-        @RecordBuilder.Initializer(value = "TRUE", source = Boolean.class)
         Boolean freeForProductionUseOnly,
         JvmVendorSpec vendorSpec,
         String libcType
@@ -49,11 +44,15 @@ public record JdkQuery(
     public JdkQuery {
         os = os != null ? os : OSFamily.current();
         arch = arch != null ? arch : SystemArchitecture.current();
+        nativeImageCapable = nativeImageCapable != null ? nativeImageCapable : Boolean.FALSE;
+        javaFxBundled = javaFxBundled != null ? javaFxBundled : Boolean.FALSE;
         versionSpec = versionSpec != null ? versionSpec : VersionSpec.latest();
+        stableReleaseOnly = stableReleaseOnly != null ? stableReleaseOnly : Boolean.TRUE;
+        longTermSupportOnly = longTermSupportOnly != null ? longTermSupportOnly : Boolean.FALSE;
+        freeForProductionUseOnly = freeForProductionUseOnly != null ? freeForProductionUseOnly : Boolean.TRUE;
         vendorSpec = vendorSpec != null ? vendorSpec : JvmVendorSpec.matching("");
         libcType = libcType != null ? libcType : getLicCType();
     }
-
     /**
      * Determines if the specified {@code JdkSpec} is compatible with the constraints
      * defined in the {@code JdkQuery}.
