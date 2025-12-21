@@ -39,20 +39,21 @@ public record JdkQuery(
         String libcType
 ) {
     /**
-     * Initializes query with defaults for unspecified attributes
+     * Initializes the query with defaults for unspecified attributes
      */
     public JdkQuery {
-        os = os != null ? os : OSFamily.current();
-        arch = arch != null ? arch : SystemArchitecture.current();
-        nativeImageCapable = nativeImageCapable != null ? nativeImageCapable : Boolean.FALSE;
-        javaFxBundled = javaFxBundled != null ? javaFxBundled : Boolean.FALSE;
-        versionSpec = versionSpec != null ? versionSpec : VersionSpec.latest();
-        stableReleaseOnly = stableReleaseOnly != null ? stableReleaseOnly : Boolean.TRUE;
-        longTermSupportOnly = longTermSupportOnly != null ? longTermSupportOnly : Boolean.FALSE;
-        freeForProductionUseOnly = freeForProductionUseOnly != null ? freeForProductionUseOnly : Boolean.TRUE;
-        vendorSpec = vendorSpec != null ? vendorSpec : JvmVendorSpec.matching("");
-        libcType = libcType != null ? libcType : getLicCType();
+        os = Objects.requireNonNullElse(os, OSFamily.current());
+        arch = Objects.requireNonNullElse(arch, SystemArchitecture.current());
+        nativeImageCapable = Objects.requireNonNullElse(nativeImageCapable, Boolean.FALSE);
+        javaFxBundled = Objects.requireNonNullElse(javaFxBundled, Boolean.FALSE);
+        versionSpec = Objects.requireNonNullElse(versionSpec, VersionSpec.latest());
+        stableReleaseOnly = Objects.requireNonNullElse(stableReleaseOnly, Boolean.TRUE);
+        longTermSupportOnly = Objects.requireNonNullElse(longTermSupportOnly, Boolean.FALSE);
+        freeForProductionUseOnly = Objects.requireNonNullElse(freeForProductionUseOnly, Boolean.TRUE);
+        vendorSpec = Objects.requireNonNullElse(vendorSpec, JvmVendorSpec.matching(""));
+        libcType = Objects.requireNonNullElseGet(libcType, JdkQuery::getLicCType);
     }
+
     /**
      * Determines if the specified {@code JdkSpec} is compatible with the constraints
      * defined in the {@code JdkQuery}.
