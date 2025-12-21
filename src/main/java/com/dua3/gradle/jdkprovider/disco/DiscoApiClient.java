@@ -131,16 +131,16 @@ public final class DiscoApiClient {
         params.add("archive_type=tgz");
         params.add("archive_type=zip");
         // filter results
-        addIfNonBlank(params, query.stableReleaseOnly() ? "release_status=ga" : "");
-        addIfNonBlank(params, query.longTermSupportOnly() ? "term_of_support=lts" : "");
-        addIfNonBlank(params, query.freeForProductionUseOnly() ? "free_to_use_in_production=true" : "");
+        addIfNonBlank(params, query.stableReleaseOnly() != Boolean.FALSE ? "release_status=ga" : "");
+        addIfNonBlank(params, query.longTermSupportOnly() != Boolean.FALSE ? "term_of_support=lts" : "");
+        addIfNonBlank(params, query.freeForProductionUseOnly() != Boolean.FALSE ? "free_to_use_in_production=true" : "");
         // operating system, system architecture, etc.
         addIfNonBlank(params, toQueryParam(query.versionSpec()));
         params.add("operating_system=" + query.os().toString());
         addIfNonBlank(params, toQueryArg(query.arch()));
         addIfNonBlank(params, "libc_type", query.libcType());
         // features
-        addIfNonBlank(params, query.javaFxBundled() ? "javafx_bundled=true" : "");
+        addIfNonBlank(params, query.javaFxBundled() == Boolean.TRUE ? "javafx_bundled=true" : "");
 
         return URI.create(baseUrl + "?" + String.join("&", params));
     }
@@ -169,7 +169,7 @@ public final class DiscoApiClient {
                     .filter(pkg -> isSupportedArchiveType(pkg.archiveType()))
                     .filter(pkg -> pkg.os() == jdkQuery.os())
                     .filter(pkg -> pkg.archticture() == jdkQuery.arch())
-                    .filter(pkg -> pkg.libcType().isBlank() || pkg.libcType().equals(jdkQuery.libcType()))
+                    .filter(pkg -> pkg.os() != OSFamily.LINUX || pkg.libcType().isBlank() || pkg.libcType().equals(jdkQuery.libcType()))
                     .filter(pkg -> jdkQuery.vendorSpec().matches(getVendorFromDistribution(pkg)))
                     .filter(pkg -> jdkQuery.nativeImageCapable() == null
                             || (jdkQuery.nativeImageCapable() == (
@@ -185,8 +185,7 @@ public final class DiscoApiClient {
         }
     }
 
-    private String getVendorFromDistribution(DiscoPackage pkg) {
-
+    private static String getVendorFromDistribution(DiscoPackage pkg) {
         String vs = VENDOR_MAP.get(pkg.distribution());
         if (vs != null) {
             return vs;
