@@ -32,14 +32,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
  * Scans the local machine for JDK installations.
  */
 public final class LocalJdkScanner {
-    private static final Pattern PATTERN_STRIP_TRAILING_NON_DIGITS = Pattern.compile("[^\\d]+$");
 
     private static final Logger LOGGER = Logging.getLogger(LocalJdkScanner.class);
 
@@ -188,7 +186,6 @@ public final class LocalJdkScanner {
         OSFamily os = null;
         SystemArchitecture arch = null;
         String vendor = null;
-        Boolean nativeImageCapable = null;
         boolean javafxBundled = false;
 
         // Try release file
@@ -221,33 +218,31 @@ public final class LocalJdkScanner {
                     case "OS_ARCH" -> arch = SystemArchitecture.parse(value);
                     case "IMPLEMENTOR" -> vendor = getVendorFromImplementor(value);
                     case "MODULES" -> javafxBundled = getJavaFXBundledFromModules(value);
-                    case "GRAALVM_VERSION" -> nativeImageCapable = true; // GraalVM generally provides native-image
                 }
             }
 
             if (version == null) {
-                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK version from release file: {}", release);
+                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to determine JDK version from release file: {}", release);
                 return Optional.empty();
             }
             if (arch == null) {
-                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK architecture from release file: {}", release);
+                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to determine JDK architecture from release file: {}", release);
                 return Optional.empty();
             }
             if (os == null) {
-                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine Operating System from release file: {}", release);
+                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to determine Operating System from release file: {}", release);
                 return Optional.empty();
             }
             if (vendor == null) {
-                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to determine JDK vendor from release file: {}", release);
+                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to determine JDK vendor from release file: {}", release);
+                return Optional.empty();
             }
 
             // If no GraalVM flag was present in the release file, try to detect native-image tool presence
-            if (nativeImageCapable == null || !nativeImageCapable) {
-                Path bin = jdkHome.resolve("bin");
-                nativeImageCapable = Files.isExecutable(bin.resolve("native-image"))
-                        || Files.isExecutable(bin.resolve("native-image.cmd"))
-                        || Files.isExecutable(bin.resolve("native-image.exe"));
-            }
+            Path bin = jdkHome.resolve("bin");
+            boolean nativeImageCapable = Files.isExecutable(bin.resolve("native-image"))
+                    || Files.isExecutable(bin.resolve("native-image.cmd"))
+                    || Files.isExecutable(bin.resolve("native-image.exe"));
 
             JdkSpec jdkSpec = new JdkSpec(os, arch, version, vendor, nativeImageCapable, javafxBundled);
             JdkInstallation jdkInstallation = new JdkInstallation(jdkHome, jdkSpec);
@@ -279,25 +274,6 @@ public final class LocalJdkScanner {
      */
     private static String getVendorFromImplementor(String value) {
         return JvmVendor.fromString(value).getDisplayName();
-    }
-
-    /**
-     * Parses a specific part of a version string array into an integer.
-     * If the requested part is not available or cannot be parsed, a default value is returned.
-     *
-     * @param parts The array of version string parts, typically split by a delimiter (e.g., ".").
-     * @param idx   The index of the part in the array to parse.
-     * @param def   The default value to return if the specified part is unavailable or not a valid integer.
-     * @return The parsed integer value of the specified version part, or the default value if parsing fails or the part is not present.
-     */
-    private static int parseVersionPart(String[] parts, int idx, int def) {
-        try {
-            return parts.length > idx
-                    ? Integer.parseInt(PATTERN_STRIP_TRAILING_NON_DIGITS.matcher(parts[idx]).replaceFirst(""))
-                    : def;
-        } catch (NumberFormatException e) {
-            return def;
-        }
     }
 
     /**

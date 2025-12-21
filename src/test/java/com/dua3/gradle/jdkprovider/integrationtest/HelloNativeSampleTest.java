@@ -12,7 +12,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see https://www.gnu.org/licenses/
 
-package com.dua3.gradle.jdkprovider.it;
+package com.dua3.gradle.jdkprovider.integrationtest;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
@@ -53,7 +53,9 @@ class HelloNativeSampleTest {
             TaskOutcome outcome = result.task(":compileJava").getOutcome();
             assertTrue(outcome == SUCCESS || outcome == UP_TO_DATE, "Build failed with outcome: " + outcome);
 
-            assertTrue(result.getOutput().contains("native_image"), "Output should indicate native-image capability");
+            File nativeExecutable = new File(projectDir, "build/native/nativeCompile/hello_native" + (System.getProperty("os.name").toLowerCase().contains("win") ? ".exe" : ""));
+            assertTrue(nativeExecutable.exists(), "Native executable should exist at: " + nativeExecutable.getAbsolutePath());
+            assertTrue(nativeExecutable.canExecute(), "Native executable should be executable");
         } catch (Exception e) {
             fail("Build failed unexpectedly: " + e.getMessage());
         }

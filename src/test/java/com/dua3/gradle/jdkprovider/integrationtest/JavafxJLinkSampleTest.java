@@ -12,7 +12,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see https://www.gnu.org/licenses/
 
-package com.dua3.gradle.jdkprovider.it;
+package com.dua3.gradle.jdkprovider.integrationtest;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
