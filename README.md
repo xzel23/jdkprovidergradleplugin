@@ -174,17 +174,15 @@ To configure the GraalVM plugin to use the correct JDK, set the `javaLauncher` p
 `jdk.getJavaLauncher(project)` returns a Provider that is evaluated lazily when needed, i.e., after the evaluation phase:
 
 ```kotlin
-project.afterEvaluate {
-    graalvmNative {
-        binaries {
-            named("main") {
-                imageName.set("hello_native")
-                mainClass.set("com.example.HelloNative")
-                this.javaLauncher = jdk.getJavaLauncher(project)
-            }
-        }
-    }
-}
+  graalvmNative {
+      binaries {
+          named("main") {
+              imageName.set("hello_native")
+              mainClass.set("com.example.HelloNative")
+              this.javaLauncher = jdk.getJavaLauncher(project)
+          }
+      }
+  }
 ```
 
 Have a look at the helloNative sample project to see how to put everything together.
