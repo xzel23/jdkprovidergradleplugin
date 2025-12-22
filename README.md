@@ -5,10 +5,13 @@ The JDK Provider Gradle Plugin gives you fine‑grained control over the exact J
 
 Key points:
 
-- Do not use together with Gradle Toolchains.
-- Java compilation is automatically configured to run in forked mode.
-- A JDK is resolved and linked into your project’s build directory (a symlink where supported; otherwise a copy).
-- Select whether to use a JDK that includes JavaFX by setting `javaFxBundled = true/false` in the `jdk` extension.
+- A compatible JDK is resolved and if no matching ine is found, automatically resolved and downloaded using the Foojay DiscoAPI. Later builds will use the already downloaded JDK.
+- To select a JDK that includes JavaFX, set `javaFxBundled = true` in the `jdk` extension.
+- To select a JDK that supports native compilation, set `nativeImageCapable = true` in the `jdk` extension.
+- The plugin supports Linux, Windows and macOS on both x64 and aarch64.
+- Java compilation will run in forked mode to use the resolved JDK.
+- This plugin is an alternative to Gradle toolchains, do not mix!
+- Look at the samples to see how to build installers and native executables.
 
 ## Requirements
 
@@ -41,10 +44,10 @@ Supported properties:
 | Property                                                        | Type                 | Description                                                                              | Default                                           |
 |-----------------------------------------------------------------|----------------------|------------------------------------------------------------------------------------------|---------------------------------------------------|
 | `version`                                                       | `String`             | Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`.                         | `"latest"` (latest available version).            |
-| `vendor`                                                        | `JvmVendorSpec`      | Specific JDK vendor, e.g. `JvmVendorSpec.ADOPTIUM`, `JvmVendorSpec.matching("GraalVM")`. | No preference (any vendor).                       |
+| `vendor`                                                        | `JvmVendorSpec`      | Specific JDK vendor, e.g. `Azul`.                                                        | No preference (any vendor).                       |
 | `os`                                                            | `OSFamily`           | Target operating system family, i.e., `OSFamily.LINUX`.                                  | Current OS.                                       |
 | `arch`                                                          | `SystemArchitecture` | Target CPU architecture (e.g. `X64`, `AARCH64`).                                         | Current architecture.                             |
-| `nativeImageCapable`                                            | `Boolean`            | Require a JDK that is capable of building native images (e.g., GraalVM)                  | `false`                                           |
+| `nativeImageCapable`                                            | `Boolean`            | Require a JDK that is capable of building native images (e.g., GraalVM).                 | `false`                                           |
 | `javaFxBundled`                                                 | `Boolean`            | Require a JDK that bundles JavaFX (`true`) or excludes it (`false`).                     | `false`                                           |
 | `automaticDownload`                                             | `Boolean`            | Allow automatic download of matching JDKs (ignored when Gradle is in offline mode).      | `true`                                            |
 
