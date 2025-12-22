@@ -166,10 +166,12 @@ native image generation:
     }
 ```
 
-This makes sure that a JDK with native image support is installed and used for compilation. But the GraalVM plugin needs
-to be configured using a toolchain, and Gradle is not able to automatically detect the correct JDK with native image support.
+This ensures that a JDK with native image support is installed and used for compilation. However, the GraalVM plugin
+requires manual configuration, as Gradle cannot automatically detect the correct JDK with native image support when
+using toolchains.
 
-Since the downloaded JDK can only be resolved after the evaluation phase, the configuration needs to be done in an afterEvaluate block:
+To configure the GraalVM plugin to use the correct JDK, set the `javaLauncher` property. This works because
+`jdk.getJavaLauncher(project)` returns a Provider that is evaluated lazily when needed, i.e., after the evaluation phase:
 
 ```kotlin
 project.afterEvaluate {
@@ -178,7 +180,7 @@ project.afterEvaluate {
             named("main") {
                 imageName.set("hello_native")
                 mainClass.set("com.example.HelloNative")
-                this.javaLauncher.set(jdk.getJavaLauncher(project))
+                this.javaLauncher = jdk.getJavaLauncher(project)
             }
         }
     }

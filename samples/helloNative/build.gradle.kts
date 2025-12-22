@@ -26,14 +26,12 @@ application {
     mainClass.set("com.example.HelloNative")
 }
 
-project.afterEvaluate {
-    graalvmNative {
-        binaries {
-            named("main") {
-                imageName.set("hello_native")
-                mainClass.set("com.example.HelloNative")
-                this.javaLauncher.set(jdk.getJavaLauncher(project))
-            }
+graalvmNative {
+    binaries {
+        named("main") {
+            imageName.set("hello_native")
+            mainClass.set("com.example.HelloNative")
+            this.javaLauncher = jdk.getJavaLauncher(project)
         }
     }
 }
