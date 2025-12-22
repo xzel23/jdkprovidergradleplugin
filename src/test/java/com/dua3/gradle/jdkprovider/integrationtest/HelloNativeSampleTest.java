@@ -53,6 +53,7 @@ class HelloNativeSampleTest {
                     .withPluginClasspath()
                     .forwardOutput();
 
+            // XXX temporary fix for https://github.com/graalvm/native-build-tools/issues/754
             if (System.getProperty("os.name").toLowerCase().contains("win")) {
                 File tmpDir = new File(projectDir, "build/tmp/test-temp");
                 if (tmpDir.exists() || tmpDir.mkdirs()) {

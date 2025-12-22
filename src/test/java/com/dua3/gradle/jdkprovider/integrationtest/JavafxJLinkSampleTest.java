@@ -48,13 +48,6 @@ class JavafxJLinkSampleTest {
                     .withPluginClasspath()
                     .forwardOutput();
 
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                File tmpDir = new File(projectDir, "build/tmp/test-temp");
-                if (tmpDir.exists() || tmpDir.mkdirs()) {
-                    runner.withArguments("clean", "jpackage", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace", "-Djava.io.tmpdir=" + tmpDir.getAbsolutePath());
-                }
-            }
-
             BuildResult result = runner.build();
 
             assertNotNull(result.task(":compileJava"));
