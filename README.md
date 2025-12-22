@@ -187,6 +187,15 @@ To configure the GraalVM plugin to use the correct JDK, set the `javaLauncher` p
 
 Have a look at the helloNative sample project to see how to put everything together.
 
+#### Important Note on using GraalVM on Windows
+
+- **Windows ARM:** There currently is no GraalVM on Windows ARM.
+
+- **Windows x64:** GraalVM on Windows x64 has an error that leads to native compilation failing with the message
+  "'other' has different root when building".
+  To fix this, add `-Djava.io.tmpdir=...` to the Gradle command line to point to a temp directory on the same drive.
+  For details, read the corresponding [GraalVM issue](https://github.com/graalvm/native-build-tools/issues/754).**
+
 ### Known issues
 
 - Compatibility with the [beryx-runtime-plugin](https://github.com/beryx/badass-runtime-plugin) has not yet been tested. If you find any issues, please report them 
@@ -196,10 +205,10 @@ Have a look at the helloNative sample project to see how to put everything toget
 ## Building the plugin
 
 - Make sure Java 21+ is installed.
-- On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer, see above for 
-  instructions. The installation is described above.
+- On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer.
+  Installation instructions are given above in the description of the JLink plugin.
 - Clone the project.
-- Run `./gradlew build` or (`.\gradlew.bat build` on Windows).
+- Run `./gradlew build` (macOS, Linux) or `.\gradlew.bat build` (Windows).
 
 ## License
 
