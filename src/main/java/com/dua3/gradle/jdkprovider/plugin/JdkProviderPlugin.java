@@ -118,8 +118,8 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             // wire tasks
             Path jdkBin = jdkInstallation.jdkHome().resolve("bin");
             String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
-            String java = jdkBin.resolve("java" + executableExtension).toString();
-            String javac = jdkBin.resolve("javac" + executableExtension).toString();
+            String java = jdkBin.resolve("java" + executableExtension).toAbsolutePath().normalize().toString();
+            String javac = jdkBin.resolve("javac" + executableExtension).toAbsolutePath().normalize().toString();
 
             p.getTasks().withType(JavaExec.class).forEach(task -> task.setExecutable(java));
             p.getTasks().withType(Test.class).forEach(task -> task.setExecutable(java));

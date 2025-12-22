@@ -208,7 +208,7 @@ public abstract class JdkExtension {
 
                 @Override
                 public Directory getInstallationPath() {
-                    return project.getLayout().getProjectDirectory().dir(finalJdkHome.getAsFile().getAbsolutePath());
+                    return finalJdkHome;
                 }
 
                 @Override
@@ -226,9 +226,8 @@ public abstract class JdkExtension {
                 @Override
                 public RegularFile getExecutablePath() {
                     String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
-                    Provider<java.io.File> javaProvider =
-                            project.provider(() -> finalJdkHome.getAsFile().toPath().resolve("bin/java" + executableExtension).toFile());
-                    return project.getLayout().file(javaProvider).get();
+                    java.io.File javaExecutable = finalJdkHome.getAsFile().toPath().resolve("bin/java" + executableExtension).toFile();
+                    return project.getLayout().getProjectDirectory().file(javaExecutable.getAbsolutePath());
                 }
             };
         });
