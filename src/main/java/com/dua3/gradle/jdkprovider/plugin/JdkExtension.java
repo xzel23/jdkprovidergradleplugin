@@ -227,7 +227,7 @@ public abstract class JdkExtension {
                 public RegularFile getExecutablePath() {
                     String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
                     java.io.File javaExecutable = finalJdkHome.getAsFile().toPath().resolve("bin/java" + executableExtension).toFile();
-                    return project.getLayout().getProjectDirectory().file(javaExecutable.getAbsolutePath());
+                    return project.getLayout().file(project.provider(() -> javaExecutable)).get();
                 }
             };
         });
