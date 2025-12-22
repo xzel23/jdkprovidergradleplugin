@@ -178,15 +178,42 @@ public final class DiscoApiClient {
     }
 
     private static boolean filterQueryResult(JdkQuery jdkQuery, DiscoPackage pkg) {
-        return isSupportedArchiveType(pkg.archiveType())
-               && pkg.os() == jdkQuery.os()
-               && pkg.archticture() == jdkQuery.arch()
-               && (pkg.os() != OSFamily.LINUX || pkg.libcType().isBlank() || pkg.libcType().equals(jdkQuery.libcType()))
-               && jdkQuery.vendorSpec().matches(getVendorFromDistribution(pkg))
-               && (jdkQuery.nativeImageCapable() == null
-                   || (jdkQuery.nativeImageCapable() == (
-                pkg.distribution().contains("graalvm") || pkg.distribution().contains("liberica_native")
-        )));
+        if (!isSupportedArchiveType(pkg.archiveType())) {
+            LOGGER.debug("pkg {} is invalid because archive type does not match query: requested=supported, actual={}", pkg.filename(), pkg.archiveType());
+            return false;
+        }
+
+        if (pkg.os() != jdkQuery.os()) {
+            LOGGER.debug("pkg {} is invalid because os does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.os(), pkg.os());
+            return false;
+        }
+
+        if (pkg.archticture() != jdkQuery.arch()) {
+            LOGGER.debug("pkg {} is invalid because architecture does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.arch(), pkg.archticture());
+            return false;
+        }
+
+        if (pkg.os() == OSFamily.LINUX && !pkg.libcType().isBlank() && !pkg.libcType().equals(jdkQuery.libcType())) {
+            LOGGER.debug("pkg {} is invalid because libc type does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.libcType(), pkg.libcType());
+            return false;
+        }
+
+        String vendor = getVendorFromDistribution(pkg);
+        if (!jdkQuery.vendorSpec().matches(vendor)) {
+            LOGGER.debug("pkg {} is invalid because vendor does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.vendorSpec(), vendor);
+            return false;
+        }
+
+        if (jdkQuery.nativeImageCapable() != null) {
+            boolean pkgNativeCapable = pkg.distribution().contains("graalvm") || pkg.distribution().contains("liberica_native");
+            if (jdkQuery.nativeImageCapable() != pkgNativeCapable) {
+                LOGGER.debug("pkg {} is invalid because native image capability does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.nativeImageCapable(), pkgNativeCapable);
+                return false;
+            }
+        }
+
+        LOGGER.debug("pkg {} is valid", pkg.filename());
+        return true;
     }
 
     private static String getVendorFromDistribution(DiscoPackage pkg) {
