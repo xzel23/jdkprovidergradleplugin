@@ -54,9 +54,9 @@ class HelloNativeSampleTest {
                     .forwardOutput();
 
             if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                String tmpDir = System.getProperty("java.io.tmpdir");
-                if (tmpDir != null) {
-                    runner.withArguments("clean", "nativeCompile", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace", "-Djava.io.tmpdir=" + tmpDir);
+                File tmpDir = new File(projectDir, "build/tmp/test-temp");
+                if (tmpDir.exists() || tmpDir.mkdirs()) {
+                    runner.withArguments("clean", "nativeCompile", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace", "-Djava.io.tmpdir=" + tmpDir.getAbsolutePath());
                 }
             }
 

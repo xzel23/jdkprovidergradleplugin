@@ -227,11 +227,7 @@ public abstract class JdkExtension {
                 public RegularFile getExecutablePath() {
                     String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
                     java.io.File javaExecutable = finalJdkHome.getAsFile().toPath().resolve("bin/java" + executableExtension).toFile();
-                    RegularFile file = project.getLayout().file(project.provider(() -> javaExecutable)).get();
-                    project.getLogger().info("[JDK Provider] Java executable path: {}", file.getAsFile().getAbsolutePath());
-                    project.getLogger().info("[JDK Provider] JDK installation path: {}", jimd.getInstallationPath().getAsFile().getAbsolutePath());
-                    project.getLogger().info("[JDK Provider] java.io.tmpdir: {}", System.getProperty("java.io.tmpdir"));
-                    return file;
+                    return project.getLayout().file(project.provider(() -> javaExecutable)).get();
                 }
             };
         });
