@@ -47,6 +47,13 @@ class JavafxMinimalSampleTest {
                     .withPluginClasspath()
                     .forwardOutput();
 
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                String tmpDir = System.getProperty("java.io.tmpdir");
+                if (tmpDir != null) {
+                    runner.withArguments("clean", "build", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace", "-Djava.io.tmpdir=" + tmpDir);
+                }
+            }
+
             BuildResult result = runner.build();
 
             assertNotNull(result.task(":compileJava"));
