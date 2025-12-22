@@ -14,6 +14,8 @@
 
 package com.dua3.gradle.jdkprovider.integrationtest;
 
+import com.dua3.gradle.jdkprovider.types.OSFamily;
+import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -26,6 +28,7 @@ import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Integration test that attempts to build the samples/helloNative project using Gradle TestKit.
@@ -36,13 +39,16 @@ class HelloNativeSampleTest {
 
     @Test
     void buildHelloNativeSample() {
+        // ignore on Windows ARM because no GraalVM on that platform
+        assumeFalse(OSFamily.current() == OSFamily.WINDOWS && SystemArchitecture.current() == SystemArchitecture.AARCH64);
+
         File projectDir = new File("samples/helloNative");
         assertTrue(projectDir.isDirectory(), "Sample project directory not found: " + projectDir.getAbsolutePath());
 
         try {
             GradleRunner runner = GradleRunner.create()
                     .withProjectDir(projectDir)
-                    .withArguments("nativeCompile", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace")
+                    .withArguments("clean", "nativeCompile", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace")
                     // Make the plugin-under-test available on the classpath
                     .withPluginClasspath()
                     .forwardOutput();
