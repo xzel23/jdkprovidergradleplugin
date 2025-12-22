@@ -113,9 +113,9 @@ public final class DiscoApiClient {
     /**
      * Builds a query URL for fetching JDK package details based on the specified query parameters.
      * The method constructs a parameterized URL by appending query parameters derived from the given
-     * {@link JdkSpec} instance to the client's base URL.
+     * {@link JdkQuery} instance to the client's base URL.
      *
-     * @param query the {@link JdkSpec} containing the parameters for constructing the query URL.
+     * @param query the {@link JdkQuery} containing the parameters for constructing the query URL.
      *              It includes details such as operating system, architecture, version specification,
      *              vendor, and additional attributes like whether JavaFX is bundled.
      * @return a {@link URI} representing the complete query URL with the specified parameters.
@@ -146,15 +146,15 @@ public final class DiscoApiClient {
     }
 
     /**
-     * Finds a suitable {@link DiscoPackage} based on the provided {@link JdkSpec}.
+     * Finds a suitable {@link DiscoPackage} based on the provided {@link JdkQuery}.
      * <p>
-     * This method queries the Disco API using parameters derived from the given JdkSpec 
+     * This method queries the Disco API using parameters derived from the given JdkQuery 
      * to retrieve matching JDK package details. If a package compatible with the specified 
      * operating system and other criteria is found, it is returned as an {@code Optional}.
      * If no matching package is found or an error occurs during the API query, an empty 
      * {@code Optional} is returned.
      *
-     * @param jdkQuery the {@link JdkSpec} instance containing parameters used to query the Disco API.
+     * @param jdkQuery the {@link JdkQuery} instance containing parameters used to query the Disco API.
      *                This includes fields like operating system, architecture, version preferences, 
      *                and vendor specifications.
      * @return an {@link Optional} containing the selected {@link DiscoPackage} if a matching 

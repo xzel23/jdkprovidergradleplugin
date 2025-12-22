@@ -39,7 +39,7 @@ Supported properties:
 
 | Property                                                        | Type                 | Description                                                                              | Default                                           |
 |-----------------------------------------------------------------|----------------------|------------------------------------------------------------------------------------------|---------------------------------------------------|
-| `version`                                                       | `String`             | Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`.                         | None. When empty, latest LTS version is selected. |
+| `version`                                                       | `String`             | Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`.                         | `"latest"` (latest available version).            |
 | `vendor`                                                        | `JvmVendorSpec`      | Specific JDK vendor, e.g. `JvmVendorSpec.ADOPTIUM`, `JvmVendorSpec.matching("GraalVM")`. | No preference (any vendor).                       |
 | `os`                                                            | `OSFamily`           | Target operating system family, i.e., `OSFamily.LINUX`.                                  | Current OS.                                       |
 | `arch`                                                          | `SystemArchitecture` | Target CPU architecture (e.g. `X64`, `AARCH64`).                                         | Current architecture.                             |

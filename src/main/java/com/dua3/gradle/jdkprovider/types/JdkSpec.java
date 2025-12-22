@@ -33,9 +33,9 @@ import java.util.stream.Stream;
  * @param os the operating system family for the JDK
  * @param arch the system architecture for the JDK
  * @param version the version specification for the JDK
- * @param vendor the vendor specification for the JDK, or null for any vendor
- * @param nativeImageCapable whether the JDK should support native image compilation, or null for any
- * @param javaFxBundled whether the JDK should have JavaFX bundled, or null for any
+ * @param vendor the vendor specification for the JDK
+ * @param nativeImageCapable whether the JDK supports native image compilation
+ * @param javaFxBundled whether the JDK has JavaFX bundled
  */
 @NullMarked
 @RecordBuilder
