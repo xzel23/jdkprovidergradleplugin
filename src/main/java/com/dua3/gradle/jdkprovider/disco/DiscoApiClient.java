@@ -166,15 +166,7 @@ public final class DiscoApiClient {
         try {
             JSONArray arr = getJsonArray(uri);
             return getDiscoPackages(arr).stream()
-                    .filter(pkg -> isSupportedArchiveType(pkg.archiveType()))
-                    .filter(pkg -> pkg.os() == jdkQuery.os())
-                    .filter(pkg -> pkg.archticture() == jdkQuery.arch())
-                    .filter(pkg -> pkg.os() != OSFamily.LINUX || pkg.libcType().isBlank() || pkg.libcType().equals(jdkQuery.libcType()))
-                    .filter(pkg -> jdkQuery.vendorSpec().matches(getVendorFromDistribution(pkg)))
-                    .filter(pkg -> jdkQuery.nativeImageCapable() == null
-                            || (jdkQuery.nativeImageCapable() == (
-                            pkg.distribution().contains("graalvm") || pkg.distribution().contains("liberica_native")
-                    )))
+                    .filter(pkg -> filterQueryResult(jdkQuery, pkg))
                     .max(Comparator.comparing(DiscoPackage::libcType, Comparator.reverseOrder())
                             .thenComparing(DiscoPackage::version)
                             .thenComparing(DiscoApiClient::archiveProprity)
@@ -183,6 +175,18 @@ public final class DiscoApiClient {
             LOGGER.info("[JDK Provider - DiscoAPI Client] query failed for {}: {}", uri, e.toString());
             return Optional.empty();
         }
+    }
+
+    private static boolean filterQueryResult(JdkQuery jdkQuery, DiscoPackage pkg) {
+        return isSupportedArchiveType(pkg.archiveType())
+               && pkg.os() == jdkQuery.os()
+               && pkg.archticture() == jdkQuery.arch()
+               && (pkg.os() != OSFamily.LINUX || pkg.libcType().isBlank() || pkg.libcType().equals(jdkQuery.libcType()))
+               && jdkQuery.vendorSpec().matches(getVendorFromDistribution(pkg))
+               && (jdkQuery.nativeImageCapable() == null
+                   || (jdkQuery.nativeImageCapable() == (
+                pkg.distribution().contains("graalvm") || pkg.distribution().contains("liberica_native")
+        )));
     }
 
     private static String getVendorFromDistribution(DiscoPackage pkg) {
