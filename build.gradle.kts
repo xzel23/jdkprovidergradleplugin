@@ -16,6 +16,7 @@ plugins {
     `java-library`
     `java-gradle-plugin`
     `maven-publish`
+    id("com.github.ben-manes.versions") version "0.53.0"
     id("com.gradle.plugin-publish") version "2.0.0"
 }
 
@@ -37,12 +38,12 @@ dependencies {
     // Lightweight archive extraction for tar/gzip support
     implementation("org.apache.commons:commons-compress:1.28.0")
     // Minimal JSON parsing for DiscoAPI responses
-    implementation("org.json:json:20240303")
+    implementation("org.json:json:20250517")
 
     // Gradle TestKit and project builder for functional/unit tests
     testImplementation(gradleTestKit())
     // Mock HTTP server for DiscoAPI tests
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
