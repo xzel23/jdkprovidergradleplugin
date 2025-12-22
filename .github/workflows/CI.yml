@@ -83,6 +83,8 @@ jobs:
 
       # Build
       - name: Build
+        env:
+          GRADLE_OPTS: ${{ matrix.os == 'windows' && format('-Djava.io.tmpdir={0}', runner.temp) || '' }}
         run: gradle build --stacktrace
 
       # Upload reports
