@@ -12,6 +12,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see https://www.gnu.org/licenses/
 
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import org.gradle.kotlin.dsl.withType
+
+/* plugins */
+
 plugins {
     `java-library`
     `java-gradle-plugin`
@@ -20,14 +25,20 @@ plugins {
     id("com.gradle.plugin-publish") version "2.0.0"
 }
 
+/* define group and version for publishing */
+
 group = "com.dua3.gradle"
 version = "0.2.0"
+
+/* compile using Java 21 */
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
+
+/* define dependencies */
 
 dependencies {
     annotationProcessor("io.soabase.record-builder:record-builder-processor:51")
@@ -45,14 +56,17 @@ dependencies {
     // Mock HTTP server for DiscoAPI tests
     testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
 
-    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation(platform("org.junit:junit-bom:6.0.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+/* use JUnit for tests */
 tasks.test {
     useJUnitPlatform()
 }
+
+/* configure the Gradle Plugin release */
 
 gradlePlugin {
     website.set("https://github.com/xzel23/jdkprovidergradleplugin")
@@ -81,5 +95,26 @@ gradlePlugin {
                 )
             )
         }
+    }
+}
+
+/* configure the versions plugin: only suggest stable dependency versions */
+
+// Determines version stability based on keywords and regex
+fun isStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+    val regex = "[0-9,.v]+-?(rc|ea|alpha|beta|b|m|snapshot)([+-]?[0-9]*)?".toRegex()
+    return stableKeyword || !regex.matches(version.lowercase())
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    // refuse non-stable versions
+    rejectVersionIf {
+        !isStable(candidate.version)
+    }
+
+    // dependencyUpdates fails in parallel mode with Gradle 9+ (https://github.com/ben-manes/gradle-versions-plugin/issues/968)
+    doFirst {
+        gradle.startParameter.isParallelProjectExecutionEnabled = false
     }
 }
