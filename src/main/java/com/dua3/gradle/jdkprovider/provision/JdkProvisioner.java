@@ -200,7 +200,7 @@ public final class JdkProvisioner {
         if (!ext.isBlank()) {
             return "jdk" + ext; // a stable generic name with correct extension
         }
-        // 3) Fallback to last path segment of the URI (may be a redirect without extension)
+        // 3) Fallback to the last path segment of the URI (may be a redirect without extension)
         return fileNameFromUri(downloadUri);
     }
 

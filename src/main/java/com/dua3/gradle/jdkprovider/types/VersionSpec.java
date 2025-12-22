@@ -260,7 +260,7 @@ public record VersionSpec(@Nullable Integer major, @Nullable Integer minor,
             return false;
         }
         if (!minor.equals(actual.minor())) {
-            return Objects.equals(patch, Integer.MAX_VALUE) && actual.minor != null && minor < actual.minor;
+            return Objects.equals(patch, Integer.MAX_VALUE) && minor < actual.minor;
         }
 
         // Patch

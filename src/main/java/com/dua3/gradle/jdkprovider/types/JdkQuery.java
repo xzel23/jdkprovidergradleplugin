@@ -20,7 +20,7 @@ import java.util.function.BiPredicate;
  * @param arch                     the target system architecture; defaults to the current architecture if null
  * @param nativeImageCapable       indicates whether the JDK should support native image compilation
  * @param javaFxBundled            indicates whether the JDK should include JavaFX libraries
- * @param versionSpec              the version specification for the JDK; defaults to latest version if null
+ * @param versionSpec              the version specification for the JDK; defaults to the latest version if null
  * @param stableReleaseOnly        indicates whether only stable releases should be considered
  * @param longTermSupportOnly      indicates whether only long-term support (LTS) versions should be considered
  * @param freeForProductionUseOnly indicates whether only JDKs free for production use should be considered

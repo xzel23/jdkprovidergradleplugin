@@ -31,7 +31,7 @@ import java.net.URI;
  * @param filename     the filename of the package as it would appear when downloaded
  * @param version      the version specification of the package
  * @param os           the operating system family for which this package is designed
- * @param archticture  the system architecture that this package is compatible with
+ * @param architecture the system architecture that this package is compatible with
  * @param libcType     the type of C library (e.g., "musl", "glibc") that the package is compatible with
  */
 public record DiscoPackage(
@@ -41,5 +41,5 @@ public record DiscoPackage(
         String archiveType,
         String filename,
         VersionSpec version, OSFamily os,
-        SystemArchitecture archticture,
+        SystemArchitecture architecture,
         String libcType) {}

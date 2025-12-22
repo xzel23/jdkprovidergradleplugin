@@ -68,7 +68,7 @@ jdk {
 }
 ```
 
-Minimal example for a JavaFX build with latest LTS JDK (Kotlin DSL):
+Minimal example for a JavaFX build with the latest LTS JDK (Kotlin DSL):
 
 ```kotlin
 jdk {
@@ -86,7 +86,7 @@ What the plugin does:
 
 This plugin provides a more fine‑grained and explicit way to control the JDK used for building your project than Gradle Toolchains. If you prefer strict, reproducible selection of a particular JDK flavor (for example, with or without bundled JavaFX), this plugin aims to make that straightforward.
 
-## Compatibility and caveats
+## Compatibility with Gradle features and plugins
 
 ### Gradle Toolchains
 
@@ -155,7 +155,7 @@ jpackage compatibility with version 4+ of the WiX toolset; version 3.x does not 
 (*) Note that I explicitly use version 5.0.2 here as WiX have introduced a "maintenance fee" for users of version 6 or
 above and binaries for newer versions are not freely available anymore.
 
-### [Gradle plugin for GraalVM Native Image](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html#configuration-toolchains-enabling) - Create native applications
+### [Gradle plugin for GraalVM Native Image](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html#configuration-toolchains-enabling) – Create native applications
 
 Since the GraalVM Native Image plugin requires a JDK with native image support, we need to configure the JDK to support
 native image generation:
@@ -192,7 +192,7 @@ Have a look at the helloNative sample project to see how to put everything toget
 - **Windows ARM:** There currently is no GraalVM on Windows ARM.
 
 - **Windows x64:** GraalVM on Windows x64 has an error that leads to native compilation failing with the message
-  "'other' has different root when building".
+  "'other' has different root when building."
   To fix this, add `-Djava.io.tmpdir=...` to the Gradle command line to point to a temp directory on the same drive.
   For details, read the corresponding [GraalVM issue](https://github.com/graalvm/native-build-tools/issues/754).**
 
@@ -212,7 +212,7 @@ Have a look at the helloNative sample project to see how to put everything toget
 
 ## License
 
-This project is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See the `LICENSE` file for details.
+This project is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or (at your option) any later version. See the `LICENSE` file for details.
 
 Copyright (c) Axel Howind.
 

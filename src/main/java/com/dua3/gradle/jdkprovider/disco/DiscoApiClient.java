@@ -16,7 +16,6 @@ package com.dua3.gradle.jdkprovider.disco;
 
 import com.dua3.gradle.jdkprovider.types.DiscoPackage;
 import com.dua3.gradle.jdkprovider.types.JdkQuery;
-import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
 import com.dua3.gradle.jdkprovider.types.VersionSpec;
@@ -55,7 +54,7 @@ public final class DiscoApiClient {
      */
     private static final String DEFAULT_BASE = "https://api.foojay.io/disco/v3.0/packages";
 
-    private static final int CONNETION_TIMEOUT_MS = 5_000;
+    private static final int CONNECTION_TIMEOUT_MS = 5_000;
     private static final int READ_TIMEOUT_MS = 15_000;
     private static final int RETRIES = 2;
 
@@ -188,8 +187,8 @@ public final class DiscoApiClient {
             return false;
         }
 
-        if (pkg.archticture() != jdkQuery.arch()) {
-            LOGGER.debug("pkg {} is invalid because architecture does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.arch(), pkg.archticture());
+        if (pkg.architecture() != jdkQuery.arch()) {
+            LOGGER.debug("pkg {} is invalid because architecture does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.arch(), pkg.architecture());
             return false;
         }
 
@@ -301,7 +300,7 @@ public final class DiscoApiClient {
 
     private static JSONArray getJsonArray(URI uri) throws IOException {
         try (HttpClient http = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(CONNETION_TIMEOUT_MS))
+                .connectTimeout(Duration.ofMillis(CONNECTION_TIMEOUT_MS))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build()) {
             int attempts = 0;

@@ -60,7 +60,7 @@ jobs:
 
       - name: Add WiX Extensions
         if: ${{ matrix.os == 'windows' && matrix.arch == 'aarch64' }}
-        # IMPORTANT: This must be a SEPARATE step from the install step
+        # IMPORTANT: This must be a SEPARATE step from the installation step
         # because GITHUB_PATH updates only take effect in the NEXT step.
         run: |
           wix extension add -g WixToolset.Util.wixext/5.0.2
