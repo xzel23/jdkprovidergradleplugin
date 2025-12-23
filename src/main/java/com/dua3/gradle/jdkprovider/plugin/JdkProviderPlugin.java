@@ -121,11 +121,21 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             String java = jdkBin.resolve("java" + executableExtension).toAbsolutePath().toString();
             String javac = jdkBin.resolve("javac" + executableExtension).toAbsolutePath().toString();
 
-            p.getTasks().withType(JavaExec.class).forEach(task -> task.setExecutable(java));
-            p.getTasks().withType(Test.class).forEach(task -> task.setExecutable(java));
-            p.getTasks().withType(Javadoc.class).forEach(task -> task.setExecutable(java));
+            p.getTasks().withType(JavaExec.class).configureEach(task -> {
+                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
+                task.setExecutable(java);
+            });
+            p.getTasks().withType(Test.class).configureEach(task -> {
+                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
+                task.setExecutable(java);
+            });
+            p.getTasks().withType(Javadoc.class).configureEach(task -> {
+                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
+                task.setExecutable(java);
+            });
 
-            p.getTasks().withType(JavaCompile.class).forEach(task -> {
+            p.getTasks().withType(JavaCompile.class).configureEach(task -> {
+                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
             });
