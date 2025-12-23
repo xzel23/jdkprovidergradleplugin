@@ -24,6 +24,7 @@ import org.gradle.api.file.RegularFile;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
@@ -36,13 +37,14 @@ import javax.inject.Inject;
  */
 public abstract class JdkExtension {
 
-    private final Property<OSFamily> os;
-    private final Property<SystemArchitecture> arch;
-    private final Property<Object> version;
-    private final Property<JvmVendorSpec> vendor;
-    private final Property<Boolean> nativeImageCapable;
-    private final Property<Boolean> javaFxBundled;
-    private final Property<Boolean> automaticDownload;
+    @Input private final Property<OSFamily> os;
+    @Input private final Property<SystemArchitecture> arch;
+    @Input private final Property<Object> version;
+    @Input private final Property<JvmVendorSpec> vendor;
+    @Input private final Property<Boolean> nativeImageCapable;
+    @Input private final Property<Boolean> javaFxBundled;
+    @Input private final Property<Boolean> automaticDownload;
+
     // read-only properties exposed to users; set internally by the plugin
     private final DirectoryProperty jdkHome;
     private final Property<JdkSpec> jdkSpec;
@@ -188,17 +190,17 @@ public abstract class JdkExtension {
             JavaInstallationMetadata jimd = new JavaInstallationMetadata() {
                 @Override
                 public JavaLanguageVersion getLanguageVersion() {
-                    return JavaLanguageVersion.of(finalJdkSpec.version().replaceFirst("\\..*", ""));
+                    return JavaLanguageVersion.of(finalJdkSpec.version().feature());
                 }
 
                 @Override
                 public String getJavaRuntimeVersion() {
-                    return finalJdkSpec.version();
+                    return finalJdkSpec.version().toString();
                 }
 
                 @Override
                 public String getJvmVersion() {
-                    return finalJdkSpec.version();
+                    return finalJdkSpec.version().toString();
                 }
 
                 @Override

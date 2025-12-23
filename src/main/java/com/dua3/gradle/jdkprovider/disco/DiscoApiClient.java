@@ -280,22 +280,19 @@ public final class DiscoApiClient {
      *         and patch versions in the given {@link VersionSpec}.
      */
     private static String toQueryParam(VersionSpec versionSpec) {
-        if (versionSpec.major() == null) {
-            return "version_by_definition=latest_lts";
+        if (VersionSpec.any().equals(versionSpec)) {
+            return "";
         }
-        if (versionSpec.major() == Integer.MAX_VALUE) {
+        if (VersionSpec.latest().equals(versionSpec)) {
             return "version_by_definition=latest";
         }
-        if (versionSpec.minor() == null) {
-            return "jdk_version=" + versionSpec.major();
+        if (VersionSpec.latestLts().equals(versionSpec)) {
+            return "version_by_definition=latest_lts";
         }
-        if (versionSpec.minor() == Integer.MAX_VALUE) {
-            return "version=" + versionSpec.major() + "..<" + (versionSpec.major() + 1);
+        if (versionSpec.isFixedFeature()) {
+            return "jdk_version=" + versionSpec.min().feature();
         }
-        if (versionSpec.patch() == null || versionSpec.patch() == Integer.MAX_VALUE) {
-            return "version=" + versionSpec.major() + "." + versionSpec.minor() + "..<" + versionSpec.major() + "." + (versionSpec.minor() + 1);
-        }
-        return "version=" + versionSpec.major() + "." + versionSpec.minor() + "." + versionSpec.patch();
+        return "version=" + versionSpec;
     }
 
     private static JSONArray getJsonArray(URI uri) throws IOException {
@@ -353,7 +350,7 @@ public final class DiscoApiClient {
                             )
                     );
 
-                    VersionSpec version = VersionSpec.parse(o.optString("java_version", "").replaceAll("\\+.*", ""));
+                    Runtime.Version version = Runtime.Version.parse(o.optString("java_version", "").replaceAll("\\+.*", ""));
                     OSFamily os = OSFamily.parse(o.optString("operating_system", ""));
                     SystemArchitecture architecture = SystemArchitecture.parse(o.optString("architecture", ""));
                     String libcType = o.optString("libc_type", "");
@@ -364,7 +361,8 @@ public final class DiscoApiClient {
                             distribution,
                             archiveType,
                             filename,
-                            version, os,
+                            version,
+                            os,
                             architecture,
                             libcType);
                 })

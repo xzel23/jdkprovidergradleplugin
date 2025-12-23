@@ -73,7 +73,7 @@ public record JdkQuery(
                 && compatibleOrLog("Architecture", jdkSpec.arch(), jdkQuery.arch(), (act, req) -> req == null || act == req)
                 && compatibleOrLog("Native Image Capable", jdkSpec.nativeImageCapable(), jdkQuery.nativeImageCapable())
                 && compatibleOrLog("JavaFX Bundled", jdkSpec.javaFxBundled(), jdkQuery.javaFxBundled())
-                && compatibleOrLog("Version", VersionSpec.parse(jdkSpec.version()), jdkQuery.versionSpec(), (act, req) -> req == null || req.matches(act))
+                && compatibleOrLog("Version", jdkSpec.version(), jdkQuery.versionSpec(), (act, req) -> req == null || req.matches(act))
                 && compatibleOrLog("Vendor", jdkSpec.vendor(), jdkQuery.vendorSpec(), (act, req) -> req == null || req.matches(act));
     }
 

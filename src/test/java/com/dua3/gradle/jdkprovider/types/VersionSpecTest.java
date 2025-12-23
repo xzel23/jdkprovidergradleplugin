@@ -45,8 +45,6 @@ class VersionSpecTest {
                 Arguments.of("21.2", "21.2", true),
                 Arguments.of("21.2", "21.3", false),
                 Arguments.of("21.2", "21.2.1", true),
-                Arguments.of("21.0", "21.0.1", true),
-                Arguments.of("21.0", "21.1", false),
                 Arguments.of("21.0.1", "21.0.1", true),
                 Arguments.of("21.0.1", "21.0.2", false),
                 Arguments.of("21+", "21.0.1", true),
@@ -58,18 +56,20 @@ class VersionSpecTest {
                 Arguments.of("21.2+", "17", false),
                 Arguments.of("21.2+", "25", false),
                 Arguments.of("25", "25.0.1", true),
-                Arguments.of("21.0+", "21.0.1", true),
-                Arguments.of("21.0+", "21.0.5", true),
-                Arguments.of("21.0+", "21.1.0", true),
+                Arguments.of("21.3+", "21.3.1", true),
+                Arguments.of("21.3+", "21.3.5", true),
+                Arguments.of("21.3+", "21.4", true),
+                Arguments.of("21.*", "21.0.1", true),
+                Arguments.of("21.*", "21.0.5", true),
+                Arguments.of("21.*", "21.1", true),
                 // edge cases
-                Arguments.of("any", null, true),
-                Arguments.of("latest", null, true),
-                Arguments.of("21", null, false),
-                Arguments.of("21.0", "21", false),
-                Arguments.of("21.0.1", "21.0", false),
                 Arguments.of("21.0.1", "21", false),
-                Arguments.of("21.1", "21.0", false),
-                Arguments.of("21.1.1", "21.1.0", false)
+                Arguments.of("21.1", "21", false),
+                Arguments.of("21.1.1", "21.1.0.1", false),
+                Arguments.of("21.0.1.7", "21.0.1.7", true),
+                Arguments.of("21.0.1.7", "21.0.1.8", false),
+                Arguments.of("21.0.1+", "21.0.1.7", true),
+                Arguments.of("21.0.1.7", "21.0.1", false)
         );
     }
 
@@ -78,7 +78,7 @@ class VersionSpecTest {
     @MethodSource("matchesProvider")
     void matches(String specStr, String actualStr, boolean expected) {
         VersionSpec spec = VersionSpec.parse(specStr);
-        VersionSpec actual = actualStr == null ? null : VersionSpec.parse(actualStr);
+        Runtime.Version actual = actualStr == null ? null : Runtime.Version.parse(actualStr);
         assertEquals(expected, spec.matches(actual), () -> specStr + " should " + (expected ? "" : "not ") + "match " + actualStr);
     }
 
@@ -92,9 +92,8 @@ class VersionSpecTest {
             "21.2",
             "21.2+",
             "21.2.3",
-            // accept case insensitivity and whitespace, canonicalize via toString
-            "  AnY  ",
-            "LATEST\t"
+            "21.2.3.4",
+            "21.2.3+"
     })
     void roundTrip(String input) {
         VersionSpec spec = VersionSpec.parse(input);
@@ -109,6 +108,8 @@ class VersionSpecTest {
                         || canonical.matches("\\d+\\.\\d+")
                         || canonical.matches("\\d+\\.\\d+\\+")
                         || canonical.matches("\\d+\\.\\d+\\.\\d+")
+                        || canonical.matches("\\d+\\.\\d+\\.\\d+\\+")
+                        || canonical.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")
         );
 
         // Ensure parse(canonical).toString() is stable
@@ -128,9 +129,7 @@ class VersionSpecTest {
             "21.2.+",
             "-1",
             "21.-1",
-            "21.2.-3",
-            "21.2.3+",
-            "1.2.3.4"
+            "21.2.-3"
     })
     void parseInvalid(String input) {
         assertThrows(IllegalArgumentException.class, () -> VersionSpec.parse(input));

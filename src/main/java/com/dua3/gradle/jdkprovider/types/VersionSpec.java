@@ -14,282 +14,248 @@
 
 package com.dua3.gradle.jdkprovider.types;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
- * A representation of a version specification that supports major, minor, and patch components. 
- * This class provides methods for parsing and matching version specifications, while enforcing
- * constraints on the valid combinations of version components.
+ * Represents a version specification with a range defined by minimum and maximum versions.
+ * This class allows specifying whether the boundaries of the range are inclusive or exclusive.
+ * It provides utility methods for common version specifications, such as the latest version,
+ * any version, or a specific version.
  *
- * @param major the major version component, null for "any", Integer.MAX_VALUE for "latest" or when used with "+"
- * @param minor the minor version component, null when not specified, Integer.MAX_VALUE when used with "+"
- * @param patch the patch version component, null when not specified, Integer.MAX_VALUE when used with "+"
  */
 @NullMarked
-public record VersionSpec(@Nullable Integer major, @Nullable Integer minor,
-                          @Nullable Integer patch) implements Comparable<VersionSpec> {
+public final class VersionSpec {
+    private static final int MAX_COMPONENT_VALUE = Integer.MAX_VALUE;
 
-    /**
-     * Canonical constructor.
-     * <p>
-     * Checks for valid version components.
-     *
-     * @param major the major version component
-     * @param minor the minor version component
-     * @param patch the patch version component
-     *
-     * @throws IllegalArgumentException if the version components are invalid.
-     */
-    public VersionSpec {
-        // Valid states:
-        // - any: (null, null, null)
-        // - latest: (MAX, [any], [any])
-        // - major only: (>=0, null, null)
-        // - major+ : (>=0, MAX, null or MAX)
-        // - major.minor: (>=0, >=0, null)
-        // - major.minor+ : (>=0, >=0, MAX)
-        // - major.minor.patch: (>=0, >=0, >=0)
-        if ((major == null && (minor != null || patch != null))
-                || (minor == null && patch != null)
-                || (major != null && major < 0)
-                || (minor != null && minor < 0)
-                || (patch != null && patch < 0)) {
-            throw new IllegalArgumentException(
-                    "invalid version: major=" + major + ", minor=" + minor + ", patch=" + patch
-            );
+    private static final Runtime.Version MIN_VERSION = Runtime.Version.parse("1");
+    private static final Runtime.Version MAX_VERSION = Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE));
+
+    private static final VersionSpec ANY = new VersionSpec(MIN_VERSION, MAX_VERSION, "any");
+    private static final VersionSpec LATEST = new VersionSpec(MIN_VERSION, Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE - 1)), "latest");
+    private static final VersionSpec LATEST_LTS = new VersionSpec(MIN_VERSION, Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE - 2)), "latest_lts");
+    private final Runtime.Version min;
+    private final Runtime.Version max;
+    private final String text;
+
+
+    public VersionSpec(Runtime.Version min, Runtime.Version max, String text) {
+        if (min.compareTo(max) >= 0) {
+            throw new IllegalArgumentException("min version must be < max version");
         }
+        this.min = min;
+        this.max = max;
+        this.text = text;
+    }
+
+    @Override
+    public String toString() {
+        return text;
     }
 
     /**
-     * Constructs a string representation of the VersionSpec object based on its major, minor, and patch fields.
-     * The representation follows these rules:
-     * <ul>
-     * <li>If the major version is null, returns "any".
-     * <li>If the major version is Integer.MAX_VALUE, returns "latest".
-     * <li>If the minor version is null, returns the major version as a string.
-     * <li>If the minor version is Integer.MAX_VALUE, appends "+" to the major version.
-     * <li>If the patch version is null, returns the major and minor versions joined by a period.
-     * <li>If the patch version is Integer.MAX_VALUE, appends "+" to the major and minor versions.
-     * <li>Otherwise, returns the major, minor, and patch versions joined by periods.
-     * </ul>
+     * Creates a {@code VersionSpec} instance based on the specified runtime version.
+     * The resulting {@code VersionSpec} includes the given version, the next version,
+     * and the string representation of the version.
      *
-     * @return the string representation of the version specification.
+     * @param v the {@code Runtime.Version} object representing the version to base the {@code VersionSpec} on
+     * @return a {@code VersionSpec} instance constructed from the specified runtime version
      */
-    @Override
-    public String toString() {
-        if (major == null) {
-            return "any";
+    public static VersionSpec of(Runtime.Version v) {
+        return new VersionSpec(v, next(v), v.toString());
+    }
+
+    private static Runtime.Version supremum(Runtime.Version v) {
+        return Runtime.Version.parse(v + ".1");
+    }
+
+    private static Runtime.Version next(Runtime.Version v) {
+        if (v.equals(MAX_VERSION)) {
+            return MAX_VERSION;
         }
-        if (major == Integer.MAX_VALUE) {
-            return "latest";
+
+        List<Integer> list = new ArrayList<>(v.version());
+        if (list.getLast() == MAX_COMPONENT_VALUE) {
+            list = list.subList(0, list.size() - 1);
         }
-        if (minor == null) {
-            return Integer.toString(major);
-        }
-        if (minor == Integer.MAX_VALUE) {
-            return major + "+";
-        }
-        if (patch == null) {
-            return major + "." + minor;
-        }
-        if (patch == Integer.MAX_VALUE) {
-            return major + "." + minor + "+";
-        }
-        return major + "." + minor + "." + patch;
+        list.set(list.size() - 1, list.getLast() + 1);
+        return parseFromInts(list);
     }
 
     /**
      * Retrieves the current runtime version and constructs a VersionSpec object
-     * representing the major, minor, and patch versions.
+     * representing the major, minor, patch, and build versions.
      *
      * @return a VersionSpec object representing the current runtime version, with the feature
-     *         version as the major, the interim version as the minor, and the update
-     *         version as the patch.
+     * version as the major, the interim version as the minor, the update
+     * version as the patch, and the build version as the build.
      */
     public static VersionSpec current() {
-        Runtime.Version runtimeVersion = Runtime.version();
-        return new VersionSpec(runtimeVersion.feature(), runtimeVersion.interim(), runtimeVersion.update());
+        return of(Runtime.version());
     }
 
     /**
      * Creates a {@code VersionSpec} instance representing the latest version.
      * The latest version is defined as having the maximum possible major version value,
-     * with minor and patch versions unspecified.
+     * with minor, patch, and build versions unspecified.
      *
      * @return a {@code VersionSpec} instance representing the latest version.
      */
     public static VersionSpec latest() {
-        return new VersionSpec(Integer.MAX_VALUE, null, null);
+        return LATEST;
     }
 
     /**
-     * Parses a version string into a {@code VersionSpec} object.
-     * The method supports the following version formats:
-     * <ul>
-     *  <li>"any" (case-insensitive): represents any version.
-     *  <li>"latest" (case-insensitive): represents the latest version.
-     *  <li>"&lt;major&gt;": a specific major version.
-     *  <li>"&lt;major&gt;+": any version with a major version greater than or equal to the specified value.
-     *  <li>"&lt;major&gt;.&lt;minor&gt;": a specific major and minor version.
-     *  <li>"&lt;major&gt;.&lt;minor&gt;+": any version with the specified major version and a minor version greater than or equal to the specified value.
-     *  <li>"&lt;major&gt;.&lt;minor&gt;.&lt;patch&gt;": a specific major, minor, and patch version.
-     * </ul>
-     * <p>
-     * Invalid formats or negative version numbers result in an {@code IllegalArgumentException}.
+     * Returns a {@code VersionSpec} instance representing the latest Long-Term Support (LTS) version.
+     * The latest LTS version is defined as the most recent version officially designated as LTS.
      *
-     * @param s the version string to parse; must not be {@code null} or empty.
-     * @return a {@code VersionSpec} instance corresponding to the parsed version string.
-     * @throws IllegalArgumentException if the version string is {@code null},
-     *                                  empty, improperly formatted, or contains invalid numeric values.
+     * @return a {@code VersionSpec} instance representing the latest LTS version.
      */
-    public static VersionSpec parse(@Nullable String s) {
-        if (s == null) {
-            throw new IllegalArgumentException("version must not be null");
-        }
-        String str = s.trim();
-        if (str.isEmpty()) {
-            throw new IllegalArgumentException("empty version string");
+    public static VersionSpec latestLts() {
+        return LATEST_LTS;
+    }
+
+    /**
+     * Creates a {@code VersionSpec} instance that matches any version.
+     *
+     * @return a {@code VersionSpec} instance representing any version.
+     */
+    public static VersionSpec any() {
+        return ANY;
+    }
+
+    /**
+     * Parses a string representation of a version specification.
+     * Supported formats:
+     * - "any": matches any version
+     * - "latest": matches the latest version
+     * - "latest_lts": matches the latest LTS version
+     * - "X.Y.Z": matches a specific version
+     * - "X..Y": matches versions from X to Y (inclusive)
+     * - "X..<Y": matches versions from X (inclusive) to Y (exclusive)
+     * - ">X..Y": matches versions from X (exclusive) to Y (inclusive)
+     * - ">X..<Y": matches versions from X (exclusive) to Y (exclusive)
+     * - "<=X": matches versions up to and including X
+     * - "<X": matches versions less than X
+     * - ">=X": matches versions from X onwards
+     * - ">X": matches versions greater than X
+     *
+     * @param s the string to parse
+     * @return a VersionSpec object representing the parsed specification
+     * @throws IllegalArgumentException if the string cannot be parsed
+     */
+    public static VersionSpec parse(String s) {
+        s = s.strip();
+
+        if (s.isBlank()) {
+            throw new IllegalArgumentException("Version specification cannot be blank");
         }
 
-        String lower = str.toLowerCase(Locale.ROOT);
-        if (lower.equals("any")) {
-            return new VersionSpec(null, null, null);
-        }
-        if (lower.equals("latest")) {
-            return new VersionSpec(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
-        }
-
-        // Patterns supported:
-        //  - "<major>"
-        //  - "<major>+"
-        //  - "<major>.<minor>"
-        //  - "<major>.<minor>+"
-        //  - "<major>.<minor>.<patch>"
-        boolean plus = lower.endsWith("+");
-        String core = plus ? lower.substring(0, lower.length() - 1) : lower;
-
-        if (core.endsWith(".")) {
-            throw new IllegalArgumentException("unmatched '.'");
-        }
-
-        String[] parts = core.split("\\.");
-        try {
-            switch (parts.length) {
-                case 1 -> {
-                    int major = Integer.parseInt(parts[0]);
-                    if (major < 0) throw new IllegalArgumentException("negative major version: " + s);
-                    if (plus) {
-                        return new VersionSpec(major, Integer.MAX_VALUE, null);
-                    }
-                    return new VersionSpec(major, null, null);
-                }
-                case 2 -> {
-                    int major = Integer.parseInt(parts[0]);
-                    int minor = Integer.parseInt(parts[1]);
-                    if (major < 0 || minor < 0) throw new IllegalArgumentException("negative version component: " + s);
-                    if (plus) {
-                        return new VersionSpec(major, minor, Integer.MAX_VALUE);
-                    }
-                    return new VersionSpec(major, minor, null);
-                }
-                case 3 -> {
-                    if (plus) {
-                        throw new IllegalArgumentException("'+' is not supported after the patch level: " + s);
-                    }
-                    int major = Integer.parseInt(parts[0]);
-                    int minor = Integer.parseInt(parts[1]);
-                    int patch = Integer.parseInt(parts[2]);
-                    if (major < 0 || minor < 0 || patch < 0)
-                        throw new IllegalArgumentException("negative version component: " + s);
-                    return new VersionSpec(major, minor, patch);
-                }
-                default -> throw new IllegalArgumentException("invalid version format: " + s);
+        // Handle special cases
+        return switch (s) {
+            case "latest" -> LATEST;
+            case "latest_lts" -> LATEST_LTS;
+            case "any" -> ANY;
+            default -> {
+                String[] parts = s.split("\\.\\.");
+                yield switch (parts.length) {
+                    case 1 -> parseSingleVersion(s, true);
+                    case 2 -> parseVersionRange(s, parts[0], parts[1]);
+                    default -> throw new IllegalArgumentException("Invalid version specification: " + s);
+                };
             }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("invalid numeric value in version: " + s, e);
-        }
+        };
     }
 
-    /**
-     * Determines whether the given {@code VersionSpec} object matches the current version 
-     * specification based on the major, minor, and patch version fields.
-     * Comparison logic considers the following rules:
-     * <ul>
-     *  <li>If the major version of the current object is {@code null}, any version matches.
-     *  <li>If the major version is {@code Integer.MAX_VALUE}, it represents "latest" 
-     *      and matches any given version.
-     *  <li>If the minor version of the current object is {@code null}, all major-matching 
-     *      versions are accepted.
-     *  <li>If the minor version is {@code Integer.MAX_VALUE}, it indicates acceptance 
-     *      of any minor version.
-     *  <li>If the patch version of the current object is {@code null}, all major and minor 
-     *      matching versions are accepted.
-     *  <li>If the patch version is {@code Integer.MAX_VALUE}, it indicates acceptance 
-     *      of any patch version.
-     * </ul>
-     *
-     * @param actual the {@code VersionSpec} object to compare against; can be {@code null}. 
-     *               If {@code null}, this method returns {@code false} unless the major 
-     *               version of the current object is {@code null} or {@code Integer.MAX_VALUE}.
-     * @return {@code true} if the provided {@code VersionSpec} matches the current version 
-     *         specification, otherwise {@code false}.
-     */
-    public boolean matches(@Nullable VersionSpec actual) {
-        if (major == null || major.equals(Integer.MAX_VALUE)) {
-            return true; // any or latest
+    private static VersionSpec parseVersionRange(String s, String sMin, String sMax) {
+        VersionSpec min = parseSingleVersion(sMin, false);
+        VersionSpec max = parseSingleVersion(sMax, false);
+        return new VersionSpec(min.min, max.max, s);
+    }
+
+    private static Runtime.Version replaceLastComponent(Runtime.Version v, int value) {
+        List<Integer> list = new ArrayList<>(v.version());
+        if (!list.isEmpty()) {
+            list.set(list.size() - 1, value);
         }
-        if (actual == null) {
-            return false;
-        }
-        if (!major.equals(actual.major())) {
-            return Objects.equals(minor, Integer.MAX_VALUE) && actual.major != null && major < actual.major;
+        return parseFromInts(list);
+    }
+
+    private static Runtime.@NonNull Version parseFromInts(List<Integer> list) {
+        return Runtime.Version.parse(list.stream().map(Object::toString).collect(Collectors.joining(".")));
+    }
+
+    private static VersionSpec parseSingleVersion(String s, boolean allowSuffix) {
+        // handle format: x+, x.y+
+        if (allowSuffix && s.endsWith("+")) {
+            Runtime.Version min = Runtime.Version.parse(s.substring(0, s.length() - 1));
+            Runtime.Version max = replaceLastComponent(min, MAX_COMPONENT_VALUE);
+            return new VersionSpec(min, max, s);
         }
 
-        // Minor
-        if (minor == null) {
-            return true;
-        }
-        if (minor.equals(Integer.MAX_VALUE)) {
-            return true; // any minor
-        }
-        if (actual.minor() == null) {
-            return false;
-        }
-        if (!minor.equals(actual.minor())) {
-            return Objects.equals(patch, Integer.MAX_VALUE) && minor < actual.minor;
+        // handle format: x.*, x.y.*
+        if (allowSuffix && s.endsWith(".*")) {
+            Runtime.Version min = Runtime.Version.parse(s.substring(0, s.length() - 2));
+            Runtime.Version max = Runtime.Version.parse(min + "." + MAX_COMPONENT_VALUE);
+            return new VersionSpec(min, max, s);
         }
 
-        // Patch
-        if (patch == null) {
-            return true;
+        // handle format: >=x, >=x.y
+        if (s.startsWith(">=")) {
+            Runtime.Version min = Runtime.Version.parse(s.substring(2));
+            return new VersionSpec(min, MAX_VERSION, s);
         }
-        if (patch.equals(Integer.MAX_VALUE)) {
-            return true; // any patch
+
+        // handle format: >=x, >=x.y
+        if (s.startsWith(">")) {
+            Runtime.Version min = Runtime.Version.parse(s.substring(1));
+            return new VersionSpec(supremum(min), MAX_VERSION, s);
         }
-        return actual.patch() != null && patch.equals(actual.patch());
+
+        // handle format: <=x, <=x.y
+        if (s.startsWith("<=")) {
+            Runtime.Version max = supremum(Runtime.Version.parse(s.substring(2)));
+            return new VersionSpec(MIN_VERSION, max, s);
+        }
+
+        // handle format: >x, >x.y
+        if (s.startsWith("<")) {
+            Runtime.Version max = Runtime.Version.parse(s.substring(2));
+            return new VersionSpec(MIN_VERSION, max, s);
+        }
+
+        // otherwise, it must be a simple version
+        return of(Runtime.Version.parse(s));
+    }
+
+    public boolean isFixedFeature() {
+        return text.matches("^\\d+$");
+    }
+
+    public boolean matches(Runtime.Version v) {
+        return min.compareTo(v) <= 0 && max.compareTo(v) > 0;
+    }
+
+    public Runtime.Version min() {
+        return min;
     }
 
     @Override
-    public int compareTo(VersionSpec other) {
-        if (!Objects.equals(major, other.major)) {
-            if (major == null) return -1;
-            if (other.major == null) return 1;
-            return major.compareTo(other.major);
-        }
-        if (!Objects.equals(minor, other.minor)) {
-            if (minor == null) return -1;
-            if (other.minor == null) return 1;
-            return minor.compareTo(other.minor);
-        }
-        if (!Objects.equals(patch, other.patch)) {
-            if (patch == null) return -1;
-            if (other.patch == null) return 1;
-            return patch.compareTo(other.patch);
-        }
-        return 0;
+    public boolean equals(Object obj) {
+        if (!(obj instanceof VersionSpec that)) return false;
+        return Objects.equals(this.min, that.min) &&
+                Objects.equals(this.max, that.max) &&
+                Objects.equals(this.text, that.text);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(min, max, text);
+    }
+
 }

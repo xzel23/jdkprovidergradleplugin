@@ -182,7 +182,7 @@ public final class LocalJdkScanner {
             return Optional.empty();
         }
 
-        String version = null;
+        Runtime.Version version = null;
         OSFamily os = null;
         SystemArchitecture arch = null;
         String vendor = null;
@@ -213,7 +213,7 @@ public final class LocalJdkScanner {
 
                 // process attributes
                 switch (attribute) {
-                    case "JAVA_VERSION" -> version = value;
+                    case "JAVA_VERSION" -> version = Runtime.Version.parse(value);
                     case "OS_NAME" -> os = OSFamily.parse(value);
                     case "OS_ARCH" -> arch = SystemArchitecture.parse(value);
                     case "IMPLEMENTOR" -> vendor = getVendorFromImplementor(value);

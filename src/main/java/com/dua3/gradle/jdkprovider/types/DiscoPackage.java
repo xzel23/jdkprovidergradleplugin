@@ -40,6 +40,7 @@ public record DiscoPackage(
         String distribution,
         String archiveType,
         String filename,
-        VersionSpec version, OSFamily os,
+        Runtime.Version version,
+        OSFamily os,
         SystemArchitecture architecture,
         String libcType) {}

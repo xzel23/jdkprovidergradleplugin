@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 public record JdkSpec(
         OSFamily os,
         SystemArchitecture arch,
-        String version,
+        Runtime.Version version,
         String vendor,
         boolean nativeImageCapable,
         boolean javaFxBundled
