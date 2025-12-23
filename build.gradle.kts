@@ -15,6 +15,14 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.gradle.kotlin.dsl.withType
 
+/* define dependency versions */
+
+val recordBuilderVersion = "51"
+val commonsCompressVersion = "1.28.0"
+val jsonVersion = "20250517"
+val mockWebServerVersion = "5.3.2"
+val junitVersion = "6.0.1"
+
 /* plugins */
 
 plugins {
@@ -41,22 +49,22 @@ java {
 /* define dependencies */
 
 dependencies {
-    annotationProcessor("io.soabase.record-builder:record-builder-processor:51")
-    compileOnly("io.soabase.record-builder:record-builder-core:51")
+    annotationProcessor("io.soabase.record-builder:record-builder-processor:$recordBuilderVersion")
+    compileOnly("io.soabase.record-builder:record-builder-core:$recordBuilderVersion")
 
     // Compile against Gradle public API (needed for resolver SPI types)
     implementation(gradleApi())
     // Lightweight archive extraction for tar/gzip support
-    implementation("org.apache.commons:commons-compress:1.28.0")
+    implementation("org.apache.commons:commons-compress:$commonsCompressVersion")
     // Minimal JSON parsing for DiscoAPI responses
-    implementation("org.json:json:20250517")
+    implementation("org.json:json:$jsonVersion")
 
     // Gradle TestKit and project builder for functional/unit tests
     testImplementation(gradleTestKit())
     // Mock HTTP server for DiscoAPI tests
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
 
-    testImplementation(platform("org.junit:junit-bom:6.0.1"))
+    testImplementation(platform("org.junit:junit-bom:$junitVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
