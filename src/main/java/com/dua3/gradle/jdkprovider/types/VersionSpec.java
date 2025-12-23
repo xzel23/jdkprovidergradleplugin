@@ -14,7 +14,6 @@
 
 package com.dua3.gradle.jdkprovider.types;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.ArrayList;
@@ -43,8 +42,7 @@ public final class VersionSpec {
     private final Runtime.Version max;
     private final String text;
 
-
-    public VersionSpec(Runtime.Version min, Runtime.Version max, String text) {
+    private VersionSpec(Runtime.Version min, Runtime.Version max, String text) {
         if (min.compareTo(max) >= 0) {
             throw new IllegalArgumentException("min version must be < max version");
         }
@@ -131,19 +129,22 @@ public final class VersionSpec {
 
     /**
      * Parses a string representation of a version specification.
+     * <p>
      * Supported formats:
-     * - "any": matches any version
-     * - "latest": matches the latest version
-     * - "latest_lts": matches the latest LTS version
-     * - "X.Y.Z": matches a specific version
-     * - "X..Y": matches versions from X to Y (inclusive)
-     * - "X..<Y": matches versions from X (inclusive) to Y (exclusive)
-     * - ">X..Y": matches versions from X (exclusive) to Y (inclusive)
-     * - ">X..<Y": matches versions from X (exclusive) to Y (exclusive)
-     * - "<=X": matches versions up to and including X
-     * - "<X": matches versions less than X
-     * - ">=X": matches versions from X onwards
-     * - ">X": matches versions greater than X
+     * <ul>
+     * <li>"any": matches any version</li>
+     * <li>"latest": matches the latest version</li>
+     * <li>"latest_lts": matches the latest LTS version</li>
+     * <li>"X.Y.Z": matches a specific version</li>
+     * <li>"X..Y": matches versions from X to Y (inclusive)</li>
+     * <li>"X..&lt;Y": matches versions from X (inclusive) to Y (exclusive)</li>
+     * <li>"&gt;X..Y": matches versions from X (exclusive) to Y (inclusive)</li>
+     * <li>"&gt;X..&lt;Y": matches versions from X (exclusive) to Y (exclusive)</li>
+     * <li>"&lt;=X": matches versions up to and including X</li>
+     * <li>"&lt;X": matches versions less than X</li>
+     * <li>"&gt;=X": matches versions from X onwards</li>
+     * <li>"&gt;X": matches versions greater than X</li>
+     * </ul>
      *
      * @param s the string to parse
      * @return a VersionSpec object representing the parsed specification
@@ -186,7 +187,7 @@ public final class VersionSpec {
         return parseFromInts(list);
     }
 
-    private static Runtime.@NonNull Version parseFromInts(List<Integer> list) {
+    private static Runtime.Version parseFromInts(List<Integer> list) {
         return Runtime.Version.parse(list.stream().map(Object::toString).collect(Collectors.joining(".")));
     }
 
@@ -233,14 +234,33 @@ public final class VersionSpec {
         return of(Runtime.Version.parse(s));
     }
 
+    /**
+     * Determines if this instance refers to a fixed feature only, i.e., represents a single Java feature version
+     * with no interim, update, etc fields set.
+     *
+     * @return {@code true} if this instances refers to a single Java feature version, otherwise {@code false}.
+     */
     public boolean isFixedFeature() {
         return text.matches("^\\d+$");
     }
 
+    /**
+     * Determines if the specified runtime version falls within the range defined by
+     * the current {@code VersionSpec} instance.
+     *
+     * @param v the {@code Runtime.Version} object to check against the version range
+     * @return {@code true} if the specified version is greater than or equal to the
+     *         minimum version and less than the maximum version; {@code false} otherwise
+     */
     public boolean matches(Runtime.Version v) {
         return min.compareTo(v) <= 0 && max.compareTo(v) > 0;
     }
 
+    /**
+     * Retrieves the minimum runtime version specified by this {@code VersionSpec}.
+     *
+     * @return the minimum runtime version
+     */
     public Runtime.Version min() {
         return min;
     }
@@ -248,9 +268,9 @@ public final class VersionSpec {
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof VersionSpec that)) return false;
-        return Objects.equals(this.min, that.min) &&
-                Objects.equals(this.max, that.max) &&
-                Objects.equals(this.text, that.text);
+        return Objects.equals(min, that.min) &&
+                Objects.equals(max, that.max) &&
+                Objects.equals(text, that.text);
     }
 
     @Override
