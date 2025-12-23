@@ -37,13 +37,13 @@ import javax.inject.Inject;
  */
 public abstract class JdkExtension {
 
-    @Input private final Property<OSFamily> os;
-    @Input private final Property<SystemArchitecture> arch;
-    @Input private final Property<Object> version;
-    @Input private final Property<JvmVendorSpec> vendor;
-    @Input private final Property<Boolean> nativeImageCapable;
-    @Input private final Property<Boolean> javaFxBundled;
-    @Input private final Property<Boolean> automaticDownload;
+    private final Property<OSFamily> os;
+    private final Property<SystemArchitecture> arch;
+    private final Property<Object> version;
+    private final Property<JvmVendorSpec> vendor;
+    private final Property<Boolean> nativeImageCapable;
+    private final Property<Boolean> javaFxBundled;
+    private final Property<Boolean> automaticDownload;
 
     // read-only properties exposed to users; set internally by the plugin
     private final DirectoryProperty jdkHome;
