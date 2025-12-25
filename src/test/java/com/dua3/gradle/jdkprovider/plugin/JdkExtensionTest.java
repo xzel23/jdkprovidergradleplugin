@@ -25,4 +25,18 @@ class JdkExtensionTest {
         extension.getVersion().set("17");
         assertEquals("17", String.valueOf(extension.getVersion().get()));
     }
+
+    @Test
+    void testOverrides() {
+        Project project = ProjectBuilder.builder().build();
+        JdkExtension extension = project.getObjects().newInstance(JdkExtension.class);
+
+        extension.getOverrides().create("java9", override -> {
+            override.setVersion(9);
+        });
+
+        assertEquals(1, extension.getOverrides().size());
+        assertEquals("java9", extension.getOverrides().getByName("java9").getName());
+        assertEquals(9, extension.getOverrides().getByName("java9").getVersion().get());
+    }
 }

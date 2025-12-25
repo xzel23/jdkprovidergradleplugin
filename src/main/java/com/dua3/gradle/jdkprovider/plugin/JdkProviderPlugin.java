@@ -28,10 +28,12 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
 
-import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A Gradle plugin for managing JDK dependencies in a project. This plugin resolves and configures
@@ -95,8 +97,78 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
         JdkExtension extension = project.getExtensions().create("jdk", JdkExtension.class, project.getObjects());
 
         project.afterEvaluate(p -> {
-            // resolve and install JDK into project build dir
-            JdkQuery jdkQuery = JdkQueryBuilder.builder()
+            Boolean automaticDownload = extension.getAutomaticDownload().getOrElse(true);
+            boolean gradleOfflineMode = project.getGradle().getStartParameter().isOffline();
+            boolean offlineMode = gradleOfflineMode || !automaticDownload;
+
+            JdkResolver jdkResolver = new JdkResolver();
+
+            // resolve global JDK
+            JdkQuery globalJdkQuery = createJdkQuery(extension, null);
+            JdkInstallation globalJdkInstallation = jdkResolver.resolve(globalJdkQuery, offlineMode)
+                    .orElseThrow(() -> new GradleException("No matching JDK found for " + globalJdkQuery));
+
+            logger.debug("[JDK Provider - Plugin] Global JDK for build: {}", globalJdkInstallation.jdkHome());
+            logger.lifecycle("JDK for this build: {}", globalJdkInstallation.jdkSpec());
+
+            // resolve overrides
+            Map<String, JdkInstallation> overrideInstallations = new HashMap<>();
+            extension.getOverrides().forEach(override -> {
+                JdkQuery overrideQuery = createJdkQuery(extension, override);
+                JdkInstallation overrideInstallation = jdkResolver.resolve(overrideQuery, offlineMode)
+                        .orElseThrow(() -> new GradleException("No matching JDK found for override '" + override.getName() + "': " + overrideQuery));
+                overrideInstallations.put(override.getName(), overrideInstallation);
+                logger.lifecycle("JDK override for '{}': {}", override.getName(), overrideInstallation.jdkSpec());
+            });
+
+            // wire tasks
+            String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
+
+            p.getTasks().withType(JavaExec.class).configureEach(task -> {
+                JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
+                String java = installation.jdkHome().resolve("bin/java" + executableExtension).toAbsolutePath().toString();
+                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.setExecutable(java);
+            });
+            p.getTasks().withType(Test.class).configureEach(task -> {
+                JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
+                String java = installation.jdkHome().resolve("bin/java" + executableExtension).toAbsolutePath().toString();
+                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.setExecutable(java);
+            });
+            p.getTasks().withType(Javadoc.class).configureEach(task -> {
+                JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
+                String javadoc = installation.jdkHome().resolve("bin/javadoc" + executableExtension).toAbsolutePath().toString();
+                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.setExecutable(javadoc);
+            });
+
+            p.getTasks().withType(JavaCompile.class).configureEach(task -> {
+                JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
+                String javac = installation.jdkHome().resolve("bin/javac" + executableExtension).toAbsolutePath().toString();
+                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.getOptions().setFork(true);
+                task.getOptions().getForkOptions().setExecutable(javac);
+
+                // automatically set release if not set
+                if (!task.getOptions().getRelease().isPresent()) {
+                    int featureVersion = installation.jdkSpec().version().feature();
+                    if (featureVersion >= 9) {
+                        task.getOptions().getRelease().set(featureVersion);
+                        logger.info("[JDK Provider] Setting release to {} for task '{}'", featureVersion, task.getName());
+                    }
+                }
+            });
+
+            // set resolved JDK properties in extension (read-only for build scripts)
+            extension.setJdkHome(globalJdkInstallation.jdkHome().toFile());
+            extension.setJdkSpec(globalJdkInstallation.jdkSpec());
+        });
+    }
+
+    private JdkQuery createJdkQuery(JdkExtension extension, JdkSpecOverride override) {
+        if (override == null) {
+            return JdkQueryBuilder.builder()
                     .vendorSpec(extension.getVendor().getOrNull())
                     .versionSpec(VersionSpec.parse(String.valueOf(extension.getVersion().getOrElse("any"))))
                     .os(extension.getOs().getOrNull())
@@ -104,46 +176,37 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                     .nativeImageCapable(extension.getNativeImageCapable().getOrElse(false))
                     .javaFxBundled(extension.getJavaFxBundled().getOrElse(false))
                     .build();
+        } else {
+            return JdkQueryBuilder.builder()
+                    .vendorSpec(override.getVendor().getOrElse(extension.getVendor().getOrNull()))
+                    .versionSpec(VersionSpec.parse(String.valueOf(override.getVersion().getOrElse(extension.getVersion().getOrElse("any")))))
+                    .os(override.getOs().getOrElse(extension.getOs().getOrNull()))
+                    .arch(override.getArch().getOrElse(extension.getArch().getOrNull()))
+                    .nativeImageCapable(override.getNativeImageCapable().getOrElse(extension.getNativeImageCapable().getOrElse(false)))
+                    .javaFxBundled(override.getJavaFxBundled().getOrElse(extension.getJavaFxBundled().getOrElse(false)))
+                    .build();
+        }
+    }
 
-            Boolean automaticDownload = extension.getAutomaticDownload().getOrElse(true);
-            boolean gradleOfflineMode = project.getGradle().getStartParameter().isOffline();
-            boolean offlineMode = gradleOfflineMode || !automaticDownload;
+    private JdkInstallation getInstallationForTask(String taskName, Project project, JdkInstallation globalInstallation, Map<String, JdkInstallation> overrides) {
+        SourceSetContainer sourceSets = project.getExtensions().findByType(SourceSetContainer.class);
+        if (sourceSets == null) {
+            return globalInstallation;
+        }
 
-            JdkInstallation jdkInstallation = new JdkResolver().resolve(jdkQuery, offlineMode)
-                    .orElseThrow(() -> new GradleException("No matching JDK found for " + jdkQuery));
-
-            logger.debug("[JDK Provider - Plugin] JDK for build: {}", jdkInstallation.jdkHome());
-            logger.lifecycle("JDK for this build: {}", jdkInstallation.jdkSpec());
-
-            // wire tasks
-            Path jdkBin = jdkInstallation.jdkHome().resolve("bin");
-            String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
-            String java = jdkBin.resolve("java" + executableExtension).toAbsolutePath().toString();
-            String javac = jdkBin.resolve("javac" + executableExtension).toAbsolutePath().toString();
-            String javadoc = jdkBin.resolve("javadoc" + executableExtension).toAbsolutePath().toString();
-
-            p.getTasks().withType(JavaExec.class).configureEach(task -> {
-                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
-                task.setExecutable(java);
-            });
-            p.getTasks().withType(Test.class).configureEach(task -> {
-                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
-                task.setExecutable(java);
-            });
-            p.getTasks().withType(Javadoc.class).configureEach(task -> {
-                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
-                task.setExecutable(javadoc);
-            });
-
-            p.getTasks().withType(JavaCompile.class).configureEach(task -> {
-                task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
-                task.getOptions().setFork(true);
-                task.getOptions().getForkOptions().setExecutable(javac);
-            });
-
-            // set resolved JDK properties in extension (read-only for build scripts)
-            extension.setJdkHome(jdkInstallation.jdkHome().toFile());
-            extension.setJdkSpec(jdkInstallation.jdkSpec());
-        });
+        return sourceSets.stream()
+                .filter(ss -> {
+                    String compileTaskName = ss.getCompileJavaTaskName();
+                    String prefix = compileTaskName.substring(0, compileTaskName.length() - "compileJava".length());
+                    return (taskName.startsWith(prefix) && !prefix.isEmpty() && !taskName.equals("compileJava")) ||
+                                  taskName.equals(compileTaskName) ||
+                                  taskName.equals(ss.getJavadocTaskName()) ||
+                                  taskName.equals(ss.getTaskName("test", null)) ||
+                                  taskName.equals(ss.getTaskName("run", null));
+                })
+                .filter(ss -> overrides.containsKey(ss.getName()))
+                .map(ss -> overrides.get(ss.getName()))
+                .findFirst()
+                .orElse(globalInstallation);
     }
 }

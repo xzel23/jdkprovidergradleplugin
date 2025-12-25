@@ -36,7 +36,7 @@ plugins {
 /* define group and version for publishing */
 
 group = "com.dua3.gradle"
-version = "0.3.1"
+version = "0.4.0-beta"
 
 /* compile using Java 21 */
 

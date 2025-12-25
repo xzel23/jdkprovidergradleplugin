@@ -17,6 +17,7 @@ package com.dua3.gradle.jdkprovider.plugin;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
@@ -24,7 +25,6 @@ import org.gradle.api.file.RegularFile;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
@@ -44,6 +44,7 @@ public abstract class JdkExtension {
     private final Property<Boolean> nativeImageCapable;
     private final Property<Boolean> javaFxBundled;
     private final Property<Boolean> automaticDownload;
+    private final NamedDomainObjectContainer<JdkSpecOverride> overrides;
 
     // read-only properties exposed to users; set internally by the plugin
     private final DirectoryProperty jdkHome;
@@ -65,6 +66,7 @@ public abstract class JdkExtension {
         this.nativeImageCapable = objects.property(Boolean.class);
         this.javaFxBundled = objects.property(Boolean.class);
         this.automaticDownload = objects.property(Boolean.class);
+        this.overrides = objects.domainObjectContainer(JdkSpecOverride.class, name -> objects.newInstance(JdkSpecOverride.class, name));
         this.jdkHome = objects.directoryProperty();
         this.jdkSpec = objects.property(JdkSpec.class);
     }
@@ -152,6 +154,15 @@ public abstract class JdkExtension {
      */
     public Property<Boolean> getAutomaticDownload() {
         return automaticDownload;
+    }
+
+    /**
+     * Retrieves the container for JDK overrides.
+     *
+     * @return a {@link NamedDomainObjectContainer} for {@link JdkSpecOverride} instances.
+     */
+    public NamedDomainObjectContainer<JdkSpecOverride> getOverrides() {
+        return overrides;
     }
 
     /**

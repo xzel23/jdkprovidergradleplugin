@@ -213,7 +213,7 @@ public final class LocalJdkScanner {
 
                 // process attributes
                 switch (attribute) {
-                    case "JAVA_VERSION" -> version = Runtime.Version.parse(value);
+                    case "JAVA_VERSION" -> version = parseVersion(value);
                     case "OS_NAME" -> os = OSFamily.parse(value);
                     case "OS_ARCH" -> arch = SystemArchitecture.parse(value);
                     case "IMPLEMENTOR" -> vendor = getVendorFromImplementor(value);
@@ -251,8 +251,15 @@ public final class LocalJdkScanner {
             return Optional.of(jdkInstallation);
         } catch (IOException e) {
             LOGGER.debug("[JDK Provider - JDK Scanner] Failed to read JDK release file: {}", release, e);
-            return Optional.empty();
+        } catch (IllegalArgumentException e) {
+            LOGGER.debug("[JDK Provider - JDK Scanner] Failed to parse data in JDK release file: {}", release, e);
         }
+        return Optional.empty();
+    }
+
+    private static Runtime.Version parseVersion(String value) {
+        // pre-Java 9 JDKs append the build number with an underscore, replace it with a dot
+        return Runtime.Version.parse(value.replace('_', '.'));
     }
 
     /**

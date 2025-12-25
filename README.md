@@ -191,6 +191,58 @@ To configure the GraalVM plugin to use the correct JDK, set the `javaLauncher` p
 
 Have a look at the helloNative sample project to see how to put everything together.
 
+### Multi-Release JARs
+
+The plugin supports creating multi-release JARs by allowing you to override the JDK for specific source sets. When an override is defined for a source set, the plugin automatically configures the corresponding compilation, testing, and execution tasks to use that JDK. 
+
+Additionally, for Java 9 and newer, the plugin automatically sets the `compilerOptions.release` flag to match the JDK version if it hasn't been manually configured.
+
+Example (Kotlin DSL):
+
+```kotlin
+sourceSets {
+    create("java17") {
+        java {
+            srcDirs("src/main/java17")
+        }
+    }
+}
+
+jdk {
+    version.set(11) // Global JDK used for the 'main' source set
+    overrides {
+        create("java17") { // Override for the 'java17' source set
+            version.set(17)
+        }
+    }
+}
+
+val java17Compile = tasks.named<JavaCompile>("compileJava17Java")
+
+tasks.named<Jar>("jar") {
+    // Include the classes compiled with Java 17 in the correct location
+    into("META-INF/versions/17") {
+        from(java17Compile.map { it.destinationDirectory })
+    }
+    manifest {
+        attributes("Multi-Release" to true)
+    }
+}
+
+java17Compile.configure {
+    // Multi-release sources usually depend on the main classes
+    classpath += sourceSets.main.get().output
+}
+```
+
+In this example:
+- The `main` source set is compiled using Java 11.
+- The `java17` source set is compiled using Java 17.
+- The `jar` task is configured to package the Java 17 classes into `META-INF/versions/17`.
+- The plugin automatically sets `--release 11` for `compileJava` and `--release 17` for `compileJava17Java`.
+
+See the `samples/multi-release` project for a complete working example.
+
 #### Important Note on using GraalVM on Windows
 
 - **Windows ARM:** There currently is no GraalVM on Windows ARM.
