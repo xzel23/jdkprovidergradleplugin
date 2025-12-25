@@ -22,6 +22,11 @@ jdk {
     nativeImageCapable = true
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 application {
     mainClass.set("com.example.HelloNative")
 }

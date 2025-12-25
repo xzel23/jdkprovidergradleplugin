@@ -22,6 +22,11 @@ jdk {
     javaFxBundled = true
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 application {
     mainClass.set("com.example.HelloFx")
 }

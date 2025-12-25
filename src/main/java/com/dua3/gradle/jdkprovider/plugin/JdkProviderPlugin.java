@@ -120,6 +120,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             String executableExtension = OSFamily.current() == OSFamily.WINDOWS ? ".exe" : "";
             String java = jdkBin.resolve("java" + executableExtension).toAbsolutePath().toString();
             String javac = jdkBin.resolve("javac" + executableExtension).toAbsolutePath().toString();
+            String javadoc = jdkBin.resolve("javadoc" + executableExtension).toAbsolutePath().toString();
 
             p.getTasks().withType(JavaExec.class).configureEach(task -> {
                 task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
@@ -131,7 +132,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             });
             p.getTasks().withType(Javadoc.class).configureEach(task -> {
                 task.getInputs().property("jdkHome", extension.getJdkHome().map(d -> d.getAsFile().getAbsolutePath()));
-                task.setExecutable(java);
+                task.setExecutable(javadoc);
             });
 
             p.getTasks().withType(JavaCompile.class).configureEach(task -> {

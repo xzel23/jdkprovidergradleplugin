@@ -23,6 +23,11 @@ jdk {
     javaFxBundled = true
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 jlink {
     javaHome = jdk.jdkHome
     options = setOf("--strip-debug", "--no-header-files", "--no-man-pages")
