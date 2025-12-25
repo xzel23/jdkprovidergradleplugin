@@ -24,13 +24,16 @@ sourceSets {
 }
 
 jdk {
-    version.set(11)
+    version = 11
+    nativeImageCapable = false
     overrides {
         create("java17") {
-            version.set(17)
+            version = 17
+            nativeImageCapable = false
         }
         create("java25") {
-            version.set(25)
+            version = 25
+            nativeImageCapable = false
         }
     }
 }

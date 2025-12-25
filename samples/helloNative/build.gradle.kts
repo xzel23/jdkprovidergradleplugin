@@ -19,6 +19,7 @@ plugins {
 }
 
 jdk {
+    version = "latest"
     nativeImageCapable = true
 }
 

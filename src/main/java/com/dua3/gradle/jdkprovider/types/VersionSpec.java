@@ -34,10 +34,13 @@ public final class VersionSpec {
 
     private static final Runtime.Version MIN_VERSION = Runtime.Version.parse("1");
     private static final Runtime.Version MAX_VERSION = Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE));
+    private static final Runtime.Version LATEST_VERSION = Runtime.Version.parse("25");
+    private static final Runtime.Version LATEST_LTS_VERSION = Runtime.Version.parse("25");
 
     private static final VersionSpec ANY = new VersionSpec(MIN_VERSION, MAX_VERSION, "any");
-    private static final VersionSpec LATEST = new VersionSpec(MIN_VERSION, Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE - 1)), "latest");
-    private static final VersionSpec LATEST_LTS = new VersionSpec(MIN_VERSION, Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE - 2)), "latest_lts");
+    private static final VersionSpec LATEST = new VersionSpec(LATEST_VERSION, Runtime.Version.parse(Integer.toString(MAX_COMPONENT_VALUE - 1)), "latest");
+    private static final VersionSpec LATEST_LTS = of(LATEST_LTS_VERSION);
+
     private final Runtime.Version min;
     private final Runtime.Version max;
     private final String text;
