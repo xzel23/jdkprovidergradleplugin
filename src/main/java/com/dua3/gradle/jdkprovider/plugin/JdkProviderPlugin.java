@@ -197,12 +197,14 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
         return sourceSets.stream()
                 .filter(ss -> {
                     String compileTaskName = ss.getCompileJavaTaskName();
-                    String prefix = compileTaskName.substring(0, compileTaskName.length() - "compileJava".length());
-                    return (taskName.startsWith(prefix) && !prefix.isEmpty() && !taskName.equals("compileJava")) ||
-                                  taskName.equals(compileTaskName) ||
-                                  taskName.equals(ss.getJavadocTaskName()) ||
-                                  taskName.equals(ss.getTaskName("test", null)) ||
-                                  taskName.equals(ss.getTaskName("run", null));
+                    String javadocTaskName = ss.getJavadocTaskName();
+                    String testTaskName = ss.getTaskName("test", null);
+                    String runTaskName = ss.getTaskName("run", null);
+
+                    return taskName.equals(compileTaskName) ||
+                            taskName.equals(javadocTaskName) ||
+                            taskName.equals(testTaskName) ||
+                            taskName.equals(runTaskName);
                 })
                 .filter(ss -> overrides.containsKey(ss.getName()))
                 .map(ss -> overrides.get(ss.getName()))

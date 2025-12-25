@@ -16,6 +16,11 @@ sourceSets {
             srcDirs("src/main/java17")
         }
     }
+    create("java25") {
+        java {
+            srcDirs("src/main/java25")
+        }
+    }
 }
 
 jdk {
@@ -24,14 +29,21 @@ jdk {
         create("java17") {
             version.set(17)
         }
+        create("java25") {
+            version.set(25)
+        }
     }
 }
 
 val java17Compile = tasks.named<JavaCompile>("compileJava17Java")
+val java25Compile = tasks.named<JavaCompile>("compileJava25Java")
 
 tasks.named<Jar>("jar") {
     into("META-INF/versions/17") {
         from(java17Compile.map { it.destinationDirectory })
+    }
+    into("META-INF/versions/25") {
+        from(java25Compile.map { it.destinationDirectory })
     }
     manifest {
         attributes("Multi-Release" to true)
@@ -42,5 +54,9 @@ tasks.named<JavaCompile>("compileJava") {
 }
 
 java17Compile.configure {
+    classpath += sourceSets.main.get().output
+}
+
+java25Compile.configure {
     classpath += sourceSets.main.get().output
 }
