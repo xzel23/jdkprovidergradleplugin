@@ -137,11 +137,18 @@ public final class DiscoApiClient {
         addIfNonBlank(params, toQueryParam(query.versionSpec()));
         params.add("operating_system=" + query.os().toString());
         addIfNonBlank(params, toQueryArg(query.arch()));
-        addIfNonBlank(params, "libc_type", query.libcType());
+        addLibcType(params, query);
         // features
         addIfNonBlank(params, query.javaFxBundled() == Boolean.TRUE ? "javafx_bundled=true" : "");
 
         return URI.create(baseUrl + "?" + String.join("&", params));
+    }
+
+    private void addLibcType(List<String> params, JdkQuery query) {
+        // only when "musl" requested
+        if (query.os() == OSFamily.LINUX && Objects.equals(query.libcType(), "musl")) {
+            params.add("libc_type=musl");
+        }
     }
 
     /**
@@ -179,6 +186,11 @@ public final class DiscoApiClient {
     private static boolean filterQueryResult(JdkQuery jdkQuery, DiscoPackage pkg) {
         if (!isSupportedArchiveType(pkg.archiveType())) {
             LOGGER.debug("pkg {} is invalid because archive type does not match query: requested=supported, actual={}", pkg.filename(), pkg.archiveType());
+            return false;
+        }
+
+        if (!jdkQuery.libcType().equals(pkg.libcType()) && (jdkQuery.libcType().equals("musl") || pkg.libcType().equals("musl"))) {
+            LOGGER.debug("pkg {} is invalid because libc type does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.libcType(), pkg.libcType());
             return false;
         }
 
@@ -473,21 +485,6 @@ public final class DiscoApiClient {
         if (t == null || t.isBlank()) return false;
         String normalized = normalizeArchiveType(t);
         return normalized.equals("zip") || normalized.equals("tar.gz") || normalized.equals("tgz");
-    }
-
-    /**
-     * Adds the specified name-value pair to the given list of parameters if the value is non-null.
-     * The method creates a query parameter string using the name and the string representation of the value,
-     * and appends it to the parameter list.
-     *
-     * @param params the list of query parameters to which the name-value pair should be added
-     * @param name   the name of the query parameter
-     * @param value  the value to be associated with the name; the value is added only if it is non-null
-     */
-    private static void addIfNonBlank(List<String> params, String name, String value) {
-        if (!value.isBlank()) {
-            params.add(param(name, value));
-        }
     }
 
     /**

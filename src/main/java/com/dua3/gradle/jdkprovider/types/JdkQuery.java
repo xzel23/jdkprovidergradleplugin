@@ -127,7 +127,7 @@ public record JdkQuery(
         if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("alpine")) {
             return "musl";
         } else {
-            return "glibc";
+            return "";
         }
     }
 }
