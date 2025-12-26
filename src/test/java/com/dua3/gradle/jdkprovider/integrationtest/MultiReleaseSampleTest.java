@@ -30,7 +30,7 @@ class MultiReleaseSampleTest {
         try {
             GradleRunner runner = GradleRunner.create()
                     .withProjectDir(projectDir)
-                    .withArguments("clean", "jar", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace")
+                    .withArguments("clean", "jar", "--no-build-cache", "--no-configuration-cache", "--debug", "--stacktrace")
                     .withPluginClasspath()
                     .forwardOutput();
 

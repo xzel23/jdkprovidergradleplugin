@@ -57,7 +57,7 @@ class HelloNativeSampleTest {
             if (System.getProperty("os.name").toLowerCase().contains("win")) {
                 File tmpDir = new File(projectDir, "build/tmp/test-temp");
                 if (tmpDir.exists() || tmpDir.mkdirs()) {
-                    runner.withArguments("clean", "build", "javadoc", "jar", "nativeCompile", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace", "-Djava.io.tmpdir=" + tmpDir.getAbsolutePath());
+                    runner.withArguments("clean", "build", "javadoc", "jar", "nativeCompile", "--no-build-cache", "--no-configuration-cache", "--debug", "--stacktrace", "-Djava.io.tmpdir=" + tmpDir.getAbsolutePath());
                 }
             }
 

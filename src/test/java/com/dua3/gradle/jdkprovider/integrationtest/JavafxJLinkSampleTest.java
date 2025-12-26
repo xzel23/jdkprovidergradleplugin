@@ -43,7 +43,7 @@ class JavafxJLinkSampleTest {
         try {
             GradleRunner runner = GradleRunner.create()
                     .withProjectDir(projectDir)
-                    .withArguments("clean", "build", "javadoc", "jar", "jpackage", "--no-build-cache", "--no-configuration-cache", "--info", "--stacktrace")
+                    .withArguments("clean", "build", "javadoc", "jar", "jpackage", "--no-build-cache", "--no-configuration-cache", "--debug", "--stacktrace")
                     // Make the plugin-under-test available on the classpath (even if the sample does not apply it yet)
                     .withPluginClasspath()
                     .forwardOutput();
