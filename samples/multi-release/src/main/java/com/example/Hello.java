@@ -2,6 +2,6 @@ package com.example;
 
 public class Hello {
     public static String getMessage() {
-        return "Hello from Java 11";
+        return "Hello from Java 17";
     }
 }

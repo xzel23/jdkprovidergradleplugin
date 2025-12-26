@@ -11,9 +11,9 @@ repositories {
 }
 
 sourceSets {
-    create("java17") {
+    create("java21") {
         java {
-            srcDirs("src/main/java17")
+            srcDirs("src/main/java21")
         }
     }
     create("java25") {
@@ -24,11 +24,11 @@ sourceSets {
 }
 
 jdk {
-    version = 11
+    version = 17
     nativeImageCapable = false
     overrides {
-        create("java17") {
-            version = 17
+        create("java21") {
+            version = 21
             nativeImageCapable = false
         }
         create("java25") {
@@ -38,12 +38,12 @@ jdk {
     }
 }
 
-val java17Compile = tasks.named<JavaCompile>("compileJava17Java")
+val java21Compile = tasks.named<JavaCompile>("compileJava21Java")
 val java25Compile = tasks.named<JavaCompile>("compileJava25Java")
 
 tasks.named<Jar>("jar") {
-    into("META-INF/versions/17") {
-        from(java17Compile.map { it.destinationDirectory })
+    into("META-INF/versions/21") {
+        from(java21Compile.map { it.destinationDirectory })
     }
     into("META-INF/versions/25") {
         from(java25Compile.map { it.destinationDirectory })
@@ -56,7 +56,7 @@ tasks.named<Jar>("jar") {
 tasks.named<JavaCompile>("compileJava") {
 }
 
-java17Compile.configure {
+java21Compile.configure {
     classpath += sourceSets.main.get().output
 }
 

@@ -40,9 +40,9 @@ class MultiReleaseSampleTest {
             TaskOutcome outcome = result.task(":compileJava").getOutcome();
             assertTrue(outcome == SUCCESS || outcome == UP_TO_DATE, "compileJava failed with outcome: " + outcome);
 
-            assertNotNull(result.task(":compileJava17Java"));
-            TaskOutcome outcome17 = result.task(":compileJava17Java").getOutcome();
-            assertTrue(outcome17 == SUCCESS || outcome17 == UP_TO_DATE, "compileJava17Java failed with outcome: " + outcome17);
+            assertNotNull(result.task(":compileJava21Java"));
+            TaskOutcome outcome21 = result.task(":compileJava21Java").getOutcome();
+            assertTrue(outcome21 == SUCCESS || outcome21 == UP_TO_DATE, "compileJava21Java failed with outcome: " + outcome21);
 
             assertNotNull(result.task(":compileJava25Java"));
             TaskOutcome outcome25 = result.task(":compileJava25Java").getOutcome();
