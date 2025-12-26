@@ -147,7 +147,7 @@ public final class DiscoApiClient {
     private void addLibcType(List<String> params, JdkQuery query) {
         // only when "musl" requested
         if (query.os() == OSFamily.LINUX && Objects.equals(query.libcType(), "musl")) {
-            params.add("libc_type=musl");
+            params.add("lib_c_type=musl");
         }
     }
 
@@ -365,7 +365,7 @@ public final class DiscoApiClient {
                     Runtime.Version version = Runtime.Version.parse(o.optString("java_version", "").replaceAll("\\+.*", ""));
                     OSFamily os = OSFamily.parse(o.optString("operating_system", ""));
                     SystemArchitecture architecture = SystemArchitecture.parse(o.optString("architecture", ""));
-                    String libcType = o.optString("libc_type", "");
+                    String libcType = o.optString("lib_c_type", "");
 
                     return new DiscoPackage(
                             URI.create(uri),
