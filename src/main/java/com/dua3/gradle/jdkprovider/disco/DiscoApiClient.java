@@ -204,11 +204,6 @@ public final class DiscoApiClient {
             return false;
         }
 
-        if (pkg.os() == OSFamily.LINUX && !pkg.libcType().isBlank() && !pkg.libcType().equals(jdkQuery.libcType())) {
-            LOGGER.debug("pkg {} is invalid because libc type does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.libcType(), pkg.libcType());
-            return false;
-        }
-
         String vendor = getVendorFromDistribution(pkg);
         if (!jdkQuery.vendorSpec().matches(vendor)) {
             LOGGER.debug("pkg {} is invalid because vendor does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.vendorSpec(), vendor);
