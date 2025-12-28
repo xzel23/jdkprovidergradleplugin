@@ -44,6 +44,7 @@ Key points:
 ## Requirements
 
 - Java 21 or newer
+- Gradle 9+ (for Windows ARM: Gradle 9.2.1)
 
 ## Applying the plugin
 
