@@ -3,6 +3,24 @@
 
 The JDK Provider Gradle Plugin gives you fine‑grained control over the exact JDK used to build your project. It is an alternative to Gradle Toolchains and must not be used together with them.
 
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Applying the plugin](#applying-the-plugin)
+- [Configuration](#configuration)
+- [Rationale](#rationale)
+- [Compatibility with Gradle features and plugins](#compatibility-with-gradle-features-and-plugins)
+  - [Gradle Toolchains](#gradle-toolchains)
+  - [Plugins that execute JDK executables directly](#plugins-that-execute-jdk-executables-directly)
+  - [Beryx JLink Plugin - Create application installers](#beryx-jlink-plugin---create-application-installers)
+  - [Gradle plugin for GraalVM Native Image – Create native applications](#gradle-plugin-for-graalvm-native-image--create-native-applications)
+    - [Important Note on using GraalVM on Windows](#important-note-on-using-graalvm-on-windows)
+  - [Multi-Release JARs](#multi-release-jars)
+  - [Known issues](#known-issues)
+- [Building the plugin](#building-the-plugin)
+- [License](#license)
+- [Contributing](#contributing)
+
 Key points:
 
 - A compatible JDK is resolved and if no matching ine is found, automatically resolved and downloaded using the Foojay DiscoAPI. Later builds will use the already downloaded JDK.
@@ -39,6 +57,15 @@ plugins {
 
 Configure the plugin via the `jdk` extension. All properties are optional; unspecified values mean "no preference" and will be determined automatically where applicable.
 
+Minimal example for a JavaFX build with the latest LTS JDK (Kotlin DSL):
+
+```kotlin
+jdk {
+    version = 25
+    javaFxBundled = true
+}
+```
+
 Supported properties:
 
 | Property                                                        | Type                 | Description                                                                              | Default                                           |
@@ -69,14 +96,6 @@ jdk {
 
     // Control whether the plugin may download missing JDKs (default: true)
     automaticDownload.set(true)
-}
-```
-
-Minimal example for a JavaFX build with the latest LTS JDK (Kotlin DSL):
-
-```kotlin
-jdk {
-     javaFxBundled.set(true)
 }
 ```
 
@@ -181,15 +200,26 @@ To configure the GraalVM plugin to use the correct JDK, set the `javaLauncher` p
   graalvmNative {
       binaries {
           named("main") {
+              this.javaLauncher = jdk.getJavaLauncher(project)
               imageName.set("hello_native")
               mainClass.set("com.example.HelloNative")
-              this.javaLauncher = jdk.getJavaLauncher(project)
           }
       }
   }
 ```
 
 Have a look at the helloNative sample project to see how to put everything together.
+
+#### Important Note on using GraalVM on Windows
+
+- **Windows ARM:** There currently is no GraalVM on Windows ARM.
+
+- **Windows x64:** GraalVM on Windows x64 has an error that leads to native compilation failing with the message
+  "'other' has different root when building."
+
+  To this, add `-Djava.io.tmpdir=...` to the Gradle command line to point to a temp directory on the same drive 
+  as your project.
+  For details, read the corresponding [GraalVM issue](https://github.com/graalvm/native-build-tools/issues/754).**
 
 ### Multi-Release JARs
 
@@ -262,15 +292,6 @@ In this example:
 
 See the `samples/multi-release` project for a complete working example.
 
-#### Important Note on using GraalVM on Windows
-
-- **Windows ARM:** There currently is no GraalVM on Windows ARM.
-
-- **Windows x64:** GraalVM on Windows x64 has an error that leads to native compilation failing with the message
-  "'other' has different root when building."
-  To fix this, add `-Djava.io.tmpdir=...` to the Gradle command line to point to a temp directory on the same drive.
-  For details, read the corresponding [GraalVM issue](https://github.com/graalvm/native-build-tools/issues/754).**
-
 ### Known issues
 
 - Compatibility with the [beryx-runtime-plugin](https://github.com/beryx/badass-runtime-plugin) has not yet been tested. If you find any issues, please report them 
@@ -279,7 +300,7 @@ See the `samples/multi-release` project for a complete working example.
 
 ## Building the plugin
 
-- Make sure Java 21+ is installed.
+- Make Java 21 or later is installed.
 - On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer.
   Installation instructions are given above in the description of the JLink plugin.
 - Clone the project.
