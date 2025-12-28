@@ -1,6 +1,8 @@
 # JDK Provider Gradle Plugin
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/xzel23/jdkprovidergradleplugin)
 
+![Teaser Image](images/teaser.jpg)
+
 The JDK Provider Gradle Plugin gives you fine‑grained control over the exact JDK used to build your project. It is an alternative to Gradle Toolchains and must not be used together with them.
 
 ### TL;DR: Why use this plugin?
