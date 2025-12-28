@@ -3,8 +3,16 @@
 
 The JDK Provider Gradle Plugin gives you fine‑grained control over the exact JDK used to build your project. It is an alternative to Gradle Toolchains and must not be used together with them.
 
+### TL;DR: Why use this plugin?
+
+- **Reliable JavaFX support:** Configures a JDK with JavaFX enabled (Gradle toolchains cannot do that reliably).
+- **Windows ARM support:** Works on Windows ARM (unlike the JavaFX Gradle plugin).
+- **Easy configuration:** Simple setup via the `jdk` extension.
+- **FOSS:** Free and Open Source Software (GPL v3).
+
 ## Table of Contents
 
+- [TL;DR: Why use this plugin?](#tldr-why-use-this-plugin)
 - [Requirements](#requirements)
 - [Applying the plugin](#applying-the-plugin)
 - [Configuration](#configuration)
