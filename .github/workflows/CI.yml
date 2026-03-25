@@ -39,11 +39,11 @@ jobs:
       - name: Set up JDKs
         uses: actions/setup-java@v4
         with:
-          distribution: zulu
+          distribution: liberica
           java-version: |
             21
             25
-          java-package: 'jdk+fx'
+          java-package: jdk+fx
           architecture: ${{ matrix.arch }}
           cache: gradle
 
