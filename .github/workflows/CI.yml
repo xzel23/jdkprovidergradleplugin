@@ -73,10 +73,10 @@ jobs:
           wix --version
 
       # Set up Gradle
-      - name: Set up Gradle 9.2.1
+      - name: Set up Gradle 9.4.1
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 9.2.1
+          gradle-version: 9.4.1
 
       - name: Verify Gradle
         run: gradle -v
@@ -85,7 +85,7 @@ jobs:
       - name: Build
         env:
           GRADLE_OPTS: ${{ matrix.os == 'windows' && format('-Djava.io.tmpdir={0}', runner.temp) || '' }}
-        run: gradle build --stacktrace
+        run: gradle build --stacktrace --debug
 
       # Upload reports
       - name: Upload test reports
@@ -115,10 +115,10 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: Set up Gradle 9.2.1
+      - name: Set up Gradle 9.4.1
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 9.2.1
+          gradle-version: 9.4.1
 
       - name: Publish plugin
         env:
