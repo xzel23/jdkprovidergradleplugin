@@ -293,11 +293,8 @@ public final class DiscoApiClient {
         if (VersionSpec.latest().equals(versionSpec)) {
             return "version_by_definition=latest";
         }
-        if (VersionSpec.latestLts().equals(versionSpec)) {
-            return "version_by_definition=latest_lts";
-        }
         if (versionSpec.isFixedFeature()) {
-            return "jdk_version=" + versionSpec.min().feature();
+            return "jdk_version=" + versionSpec.min().feature() + ".*";
         }
         return "version=" + versionSpec;
     }

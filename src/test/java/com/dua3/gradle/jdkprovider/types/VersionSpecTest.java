@@ -32,7 +32,7 @@ class VersionSpecTest {
                 Arguments.of("any", "21.0.1", true),
                 Arguments.of("any", "17", true),
                 Arguments.of("latest", "26", true),
-                Arguments.of("latest", "25.0.1", true),
+                Arguments.of("latest", "25.0.1", false),
                 Arguments.of("latest", "17", false),
                 Arguments.of("latest_lts", "25.0.1", true),
                 Arguments.of("latest_lts", "26", false),
