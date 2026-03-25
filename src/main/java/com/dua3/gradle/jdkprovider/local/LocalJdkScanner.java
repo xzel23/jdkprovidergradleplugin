@@ -28,12 +28,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -149,9 +151,9 @@ public final class LocalJdkScanner {
      * @return JDK homes
      */
     public List<JdkInstallation> getInstalledJdks() {
-        List<Path> homes = new ArrayList<>();
+        Set<Path> homes = new LinkedHashSet<>();
 
-        // JAVA_HOME
+        // JAVA_HOME Variables - in GitHub CI, several JAVA_HOME_* variables are set, so do not only test JAVA_HOME.
         environment.entrySet().stream()
                 .filter(e -> e.getKey().startsWith("JAVA_HOME"))
                 .filter(e -> !e.getValue().isBlank())
@@ -165,6 +167,14 @@ public final class LocalJdkScanner {
                         LOGGER.debug("[JDK Provider - JDK Scanner] {}={} is not a directory", e.getKey(), candidatePath);
                     }
                 });
+
+        // system dependent JDK detection
+        switch (OSFamily.current()) {
+            case MACOS -> detectInstalledJdkMacOs(homes);
+            case LINUX -> detectInstalledJdkLinux(homes);
+            case WINDOWS -> detectInstalledJdkWindows(homes);
+            default -> LOGGER.debug("[JDK Provider - JDK Scanner] No JDK detection available for current OS: {}", OSFamily.current());
+        }
 
         // org.gradle.java.installations.paths (comma separated)
         String gradlePaths = System.getProperty("org.gradle.java.installations.paths", "");
@@ -197,6 +207,105 @@ public final class LocalJdkScanner {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
+    }
+
+    /**
+     * Detects and collects the filesystem paths of installed JDKs on macOS by invoking
+     * the `/usr/libexec/java_home` command and parsing its output.
+     * <p>
+     * This method collects candidate JDK installation paths and adds them to the provided list
+     * if the detected paths are valid directories.
+     *
+     * @param homes a collection that will be populated with the detected JDK installation paths on macOS
+     */
+    private static void detectInstalledJdkMacOs(Collection<Path> homes) {
+        try {
+            Process process = new ProcessBuilder("/usr/libexec/java_home", "-X").start();
+            try (var inputStream = process.getInputStream();
+                 var reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("<key>JVMHomePath</key>")) {
+                        line = reader.readLine();
+                        if (line != null && line.contains("<string>") && line.contains("</string>")) {
+                            int s1 = line.indexOf("<string>") + 8;
+                            int s2 = line.indexOf("</string>");
+                            if (s2 > s1) {
+                                Path p = Paths.get(line.substring(s1, s2).trim()).toAbsolutePath().normalize();
+                                if (Files.isDirectory(p)) {
+                                    LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate JDK installation via java_home: {}", p);
+                                    homes.add(p);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            LOGGER.warn("[JDK Provider - JDK Scanner] Failed to query installed JDKs via java_home", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Detects and collects the filesystem paths of JDK installations on Linux systems by scanning
+     * common locations where JDKs are typically installed.
+     * <p>
+     * The method searches within predefined directories (e.g., /usr/lib/jvm and /usr/java)
+     * and adds any valid directories to the provided collection of JDK home paths.
+     *
+     * @param homes a collection that will be populated with the detected JDK installation paths
+     */
+    private static void detectInstalledJdkLinux(Collection<Path> homes) {
+        List<Path> commonPaths = List.of(
+                Paths.get("/usr/lib/jvm"),
+                Paths.get("/usr/java")
+        );
+
+        for (Path baseDir : commonPaths) {
+            if (Files.isDirectory(baseDir)) {
+                try (Stream<Path> stream = Files.list(baseDir)) {
+                    stream.filter(Files::isDirectory)
+                            .forEach(homes::add);
+                } catch (IOException e) {
+                    LOGGER.debug("Failed to scan directory: {}", baseDir, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Detects and collects the filesystem paths of installed JDKs on a Windows operating system
+     * by scanning common installation directories.
+     * <p>
+     * The method iterates over predefined directories known to commonly contain JDK installations
+     * (e.g., "C:\\Program Files\\Java"). Within each identified directory, it checks for subdirectories
+     * that could represent individual JDK installations and adds their paths to the provided collection.
+     *
+     * @param homes a collection that will be populated with the detected JDK installation paths on Windows
+     */
+    private static void detectInstalledJdkWindows(Collection<Path> homes) {
+        List<Path> commonPaths = List.of(
+                Paths.get("C:\\Program Files\\Java"),
+                Paths.get("C:\\Program Files\\Eclipse Adoptium"),
+                Paths.get("C:\\Program Files\\Amazon Corretto"),
+                Paths.get("C:\\Program Files\\Zulu"),
+                Paths.get("C:\\Program Files\\Microsoft")
+        );
+
+        for (Path baseDir : commonPaths) {
+            if (Files.isDirectory(baseDir)) {
+                try (Stream<Path> stream = Files.list(baseDir)) {
+                    stream.filter(Files::isDirectory)
+                            .forEach(homes::add);
+                } catch (IOException e) {
+                    LOGGER.debug("[JDK Provider - JDK Scanner] Failed to scan directory: {}", baseDir, e);
+                }
+            }
+        }
     }
 
     /**
