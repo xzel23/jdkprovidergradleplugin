@@ -27,16 +27,20 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
-
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocalJdkScannerTest {
     private String originalPathsProp;
+    private Path emptyCacheDir;
 
     @BeforeEach
-    void stashProp() {
+    void setup() throws IOException {
         originalPathsProp = System.getProperty("org.gradle.java.installations.paths");
+        emptyCacheDir = Files.createTempDirectory("empty-cache-");
     }
 
     @AfterEach
@@ -81,7 +85,7 @@ class LocalJdkScannerTest {
         // make scanner discover our path
         System.setProperty("org.gradle.java.installations.paths", fakeJdk.toString());
 
-        LocalJdkScanner scanner = new LocalJdkScanner();
+        LocalJdkScanner scanner = new LocalJdkScanner(System.getenv(), emptyCacheDir);
 
         JdkQuery jdkQuery = JdkQueryBuilder.builder()
                 .versionSpec(VersionSpec.parse("25"))
@@ -93,6 +97,64 @@ class LocalJdkScannerTest {
 
         List<JdkInstallation> found = scanner.getCompatibleInstalledJdks(jdkQuery);
         assertTrue(found.stream().map(JdkInstallation::jdkHome).anyMatch(fakeJdk::equals));
+    }
+
+    @Test
+    void detectsJdkViaJavaHomeEnvironmentVariable() throws IOException {
+        Path fakeJdk = Files.createTempDirectory("fake-jdk-env-");
+
+        // create
+        Path bin = fakeJdk.resolve("bin");
+        Files.createDirectories(bin);
+        Files.writeString(bin.resolve(OSFamily.current() == OSFamily.WINDOWS ? "java.exe" : "java"), "java");
+
+        // create a release file
+        Path release = fakeJdk.resolve("release");
+        Files.writeString(release, """
+                IMPLEMENTOR="Azul Systems, Inc."
+                JAVA_VERSION="21.0.3"
+                OS_ARCH="aarch64"
+                OS_NAME="Darwin"
+                """
+        );
+
+        // mock environment
+        Map<String, String> env = Map.of("JAVA_HOME_TEST", fakeJdk.toString());
+        LocalJdkScanner scanner = new LocalJdkScanner(env, emptyCacheDir);
+
+        JdkQuery jdkQuery = JdkQueryBuilder.builder()
+                .versionSpec(VersionSpec.parse("21"))
+                .build();
+
+        List<JdkInstallation> found = scanner.getCompatibleInstalledJdks(jdkQuery);
+        assertTrue(found.stream().map(JdkInstallation::jdkHome).anyMatch(fakeJdk::equals),
+                "JDK should be detected via JAVA_HOME_TEST environment variable");
+    }
+
+    @Test
+    void detectsMultipleJdksViaJavaHomeEnvironmentVariablesInOrder() throws IOException {
+        Path fakeJdk1 = Files.createTempDirectory("fake-jdk-1-");
+        Path fakeJdk2 = Files.createTempDirectory("fake-jdk-2-");
+
+        for (Path p : List.of(fakeJdk1, fakeJdk2)) {
+            Path bin = p.resolve("bin");
+            Files.createDirectories(bin);
+            Files.writeString(bin.resolve(OSFamily.current() == OSFamily.WINDOWS ? "java.exe" : "java"), "java");
+            Path release = p.resolve("release");
+            Files.writeString(release, "JAVA_VERSION=\"21.0.3\"\nOS_NAME=\"Darwin\"\nOS_ARCH=\"aarch64\"\nIMPLEMENTOR=\"Azul Systems, Inc.\"\n");
+        }
+
+        // mock environment with out-of-order keys to test sorting
+        Map<String, String> env = new LinkedHashMap<>();
+        env.put("JAVA_HOME_Z_LAST", fakeJdk2.toString());
+        env.put("JAVA_HOME_A_FIRST", fakeJdk1.toString());
+
+        LocalJdkScanner scanner = new LocalJdkScanner(env, emptyCacheDir);
+        List<JdkInstallation> found = scanner.getInstalledJdks();
+
+        assertEquals(2, found.size());
+        assertEquals(fakeJdk1, found.get(0).jdkHome(), "First detected JDK should be from JAVA_HOME_A_FIRST");
+        assertEquals(fakeJdk2, found.get(1).jdkHome(), "Second detected JDK should be from JAVA_HOME_Z_LAST");
     }
 }
 

@@ -30,7 +30,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -41,6 +43,9 @@ public final class LocalJdkScanner {
 
     private static final Logger LOGGER = Logging.getLogger(LocalJdkScanner.class);
 
+    private final Map<String, String> environment;
+    private final Path cacheDir;
+
     /**
      * Constructs a new instance of {@code LocalJdkScanner}.
      * This class is responsible for scanning the local system to discover installed JDKs,
@@ -49,6 +54,27 @@ public final class LocalJdkScanner {
      * When instantiated, the scanner is ready to perform discovery operations.
      */
     public LocalJdkScanner() {
+        this(System.getenv(), JdkProvisioner.getCachedJdksDir());
+    }
+
+    /**
+     * Constructs a new instance of {@code LocalJdkScanner} with a custom environment.
+     *
+     * @param environment the environment variables to use for scanning
+     */
+    LocalJdkScanner(Map<String, String> environment) {
+        this(environment, JdkProvisioner.getCachedJdksDir());
+    }
+
+    /**
+     * Constructs a new instance of {@code LocalJdkScanner} with a custom environment and cache directory.
+     *
+     * @param environment the environment variables to use for scanning
+     * @param cacheDir    the cache directory to scan for JDKs
+     */
+    LocalJdkScanner(Map<String, String> environment, Path cacheDir) {
+        this.environment = environment;
+        this.cacheDir = cacheDir;
     }
 
     /**
@@ -126,14 +152,19 @@ public final class LocalJdkScanner {
         List<Path> homes = new ArrayList<>();
 
         // JAVA_HOME
-        String javaHome = System.getenv("JAVA_HOME");
-        if (javaHome != null && !javaHome.isBlank()) {
-            Path p = Paths.get(javaHome).toAbsolutePath().normalize();
-            if (Files.isDirectory(p)) {
-                LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate in JAVA_HOME={}", p);
-                homes.add(p);
-            }
-        }
+        environment.entrySet().stream()
+                .filter(e -> e.getKey().startsWith("JAVA_HOME"))
+                .filter(e -> !e.getValue().isBlank())
+                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .forEach(e -> {
+                    Path candidatePath = Paths.get(e.getValue()).toAbsolutePath().normalize();
+                    if (Files.isDirectory(candidatePath)) {
+                        LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate in {}={}", e.getKey(), candidatePath);
+                        homes.add(candidatePath);
+                    } else {
+                        LOGGER.debug("[JDK Provider - JDK Scanner] {}={} is not a directory", e.getKey(), candidatePath);
+                    }
+                });
 
         // org.gradle.java.installations.paths (comma separated)
         String gradlePaths = System.getProperty("org.gradle.java.installations.paths", "");
@@ -148,9 +179,8 @@ public final class LocalJdkScanner {
         }
 
         // JDK Provider cache
-        Path cachedJdks = JdkProvisioner.getCachedJdksDir();
-        if (Files.isDirectory(cachedJdks)) {
-            try (Stream<Path> paths = Files.list(cachedJdks)) {
+        if (Files.isDirectory(cacheDir)) {
+            try (Stream<Path> paths = Files.list(cacheDir)) {
                 paths
                         .filter(Files::isDirectory)
                         .forEach(p -> {
@@ -158,7 +188,7 @@ public final class LocalJdkScanner {
                             homes.add(p);
                         });
             } catch (IOException e) {
-                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to scan cache directory {}: {}", cachedJdks, e.getMessage());
+                LOGGER.warn("[JDK Provider - JDK Scanner] Failed to scan cache directory {}: {}", cacheDir, e.getMessage());
             }
         }
 
