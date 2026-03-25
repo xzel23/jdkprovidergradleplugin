@@ -311,7 +311,7 @@ See the `samples/multi-release` project for a complete working example.
 
 ## Building the plugin
 
-- Make Java 21 or later is installed.
+- Make sure Java 21 or later is installed.
 - On Windows only, the javafx-jlink sample needs the WiX toolset installed to create an installer.
   Installation instructions are given above in the description of the JLink plugin.
 - Clone the project.
