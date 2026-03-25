@@ -123,6 +123,8 @@ class LocalJdkScannerTest {
 
         JdkQuery jdkQuery = JdkQueryBuilder.builder()
                 .versionSpec(VersionSpec.parse("21"))
+                .os(OSFamily.MACOS)
+                .arch(SystemArchitecture.AARCH64)
                 .build();
 
         List<JdkInstallation> found = scanner.getCompatibleInstalledJdks(jdkQuery);
