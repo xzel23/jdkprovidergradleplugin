@@ -17,11 +17,11 @@ import org.gradle.kotlin.dsl.withType
 
 /* define dependency versions */
 
-val recordBuilderVersion = "51"
+val recordBuilderVersion = "52"
 val commonsCompressVersion = "1.28.0"
-val jsonVersion = "20250517"
+val jsonVersion = "20251224"
 val mockWebServerVersion = "5.3.2"
-val junitVersion = "6.0.1"
+val junitVersion = "6.0.3"
 
 /* plugins */
 
@@ -30,7 +30,7 @@ plugins {
     `java-gradle-plugin`
     `maven-publish`
     id("com.github.ben-manes.versions") version "0.53.0"
-    id("com.gradle.plugin-publish") version "2.0.0"
+    id("com.gradle.plugin-publish") version "2.1.1"
 }
 
 /* define group and version for publishing */
