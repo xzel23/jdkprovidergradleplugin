@@ -24,6 +24,12 @@ class JdkExtensionTest {
 
         extension.getVersion().set("17");
         assertEquals("17", String.valueOf(extension.getVersion().get()));
+
+        extension.getVersion().set("25.0.1");
+        assertEquals("25.0.1", String.valueOf(extension.getVersion().get()));
+
+        extension.getVersion().set("25.0.1+");
+        assertEquals("25.0.1+", String.valueOf(extension.getVersion().get()));
     }
 
     @Test
