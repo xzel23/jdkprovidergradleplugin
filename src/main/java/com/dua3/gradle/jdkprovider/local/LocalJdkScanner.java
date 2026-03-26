@@ -210,8 +210,8 @@ public final class LocalJdkScanner {
     }
 
     /**
-     * Detects and collects the filesystem paths of installed JDKs on macOS by invoking
-     * the `/usr/libexec/java_home` command and parsing its output.
+     * Detects and collects the filesystem paths of installed JDKs on macOS by scanning
+     * common locations where JDKs are typically installed.
      * <p>
      * This method collects candidate JDK installation paths and adds them to the provided list
      * if the detected paths are valid directories.
@@ -219,33 +219,16 @@ public final class LocalJdkScanner {
      * @param homes a collection that will be populated with the detected JDK installation paths on macOS
      */
     private static void detectInstalledJdkMacOs(Collection<Path> homes) {
-        try {
-            Process process = new ProcessBuilder("/usr/libexec/java_home", "-X").start();
-            try (var inputStream = process.getInputStream();
-                 var reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("<key>JVMHomePath</key>")) {
-                        line = reader.readLine();
-                        if (line != null && line.contains("<string>") && line.contains("</string>")) {
-                            int s1 = line.indexOf("<string>") + 8;
-                            int s2 = line.indexOf("</string>");
-                            if (s2 > s1) {
-                                Path p = Paths.get(line.substring(s1, s2).trim()).toAbsolutePath().normalize();
-                                if (Files.isDirectory(p)) {
-                                    LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate JDK installation via java_home: {}", p);
-                                    homes.add(p);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            process.waitFor();
-        } catch (IOException | InterruptedException e) {
-            LOGGER.warn("[JDK Provider - JDK Scanner] Failed to query installed JDKs via java_home", e);
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
+        Path baseDir = Paths.get("/Library/Java/JavaVirtualMachines");
+        if (Files.isDirectory(baseDir)) {
+            try (Stream<Path> stream = Files.list(baseDir)) {
+                stream.filter(Files::isDirectory)
+                        .forEach(p -> {
+                            LOGGER.debug("[JDK Provider - JDK Scanner] Found candidate JDK installation in {}: {}", baseDir, p);
+                            homes.add(p);
+                        });
+            } catch (IOException e) {
+                LOGGER.debug("[JDK Provider - JDK Scanner] Failed to scan directory: {}", baseDir, e);
             }
         }
     }
