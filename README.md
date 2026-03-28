@@ -152,11 +152,11 @@ An example `build.gradle.kts`:
     plugins {
         application
         id("com.dua3.gradle.jdkprovider") version "0.5.0"
-        id("org.beryx.jlink") version "3.2.0"
+        id("org.beryx.jlink") version "4.0.0"
     }
     
     jdk {
-        version = "25"
+        version = "25.0.2"
         javaFxBundled = true
     }
 

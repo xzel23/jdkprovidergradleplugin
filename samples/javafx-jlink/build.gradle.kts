@@ -15,7 +15,7 @@
 plugins {
     application
     id("com.dua3.gradle.jdkprovider")
-    id("org.beryx.jlink") version "4.0.0-rc3"
+    id("org.beryx.jlink") version "4.0.0-rc4"
 }
 
 jdk {
