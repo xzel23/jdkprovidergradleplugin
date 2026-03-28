@@ -112,6 +112,18 @@ class DiscoApiClientTest {
                 "      \"link\": { \n" +
                 "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
                 "      }\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"package_type\": \"jdk\",\n" +
+                "      \"distribution\": \"zulu\",\n" +
+                "      \"java_version\": \"22.0.1\",\n" +
+                "      \"archive_type\": \"tar.gz\",\n" +
+                "      \"directly_downloadable\": true,\n" +
+                "      \"operating_system\": \"macos\",\n" +
+                "      \"architecture\": \"aarch64\",\n" +
+                "      \"link\": { \n" +
+                "         \"pkg_download_redirect\": \"" + server.url(downloadPath) + "\"\n" +
+                "      }\n" +
                 "    }\n" +
                 "  ],\n" +
                 "  \"message\": \"1 package(s) found\"\n" +

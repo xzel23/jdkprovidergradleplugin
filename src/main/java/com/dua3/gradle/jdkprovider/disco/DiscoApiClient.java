@@ -144,6 +144,16 @@ public final class DiscoApiClient {
         return URI.create(baseUrl + "?" + String.join("&", params));
     }
 
+    /**
+     * Builds and returns the DiscoAPI packages query URL for the provided JDK query.
+     *
+     * @param query JDK selection query
+     * @return fully qualified packages query URI
+     */
+    public URI getPackagesQueryUrl(JdkQuery query) {
+        return buildPackagesQueryUrl(query);
+    }
+
     private void addLibcType(List<String> params, JdkQuery query) {
         // only when "musl" requested
         if (query.os() == OSFamily.LINUX && Objects.equals(query.libcType(), "musl")) {
@@ -184,6 +194,11 @@ public final class DiscoApiClient {
     }
 
     private static boolean filterQueryResult(JdkQuery jdkQuery, DiscoPackage pkg) {
+        if (!jdkQuery.versionSpec().matches(pkg.version())) {
+            LOGGER.debug("pkg {} is invalid because version does not match query: requested={}, actual={}", pkg.filename(), jdkQuery.versionSpec(), pkg.version());
+            return false;
+        }
+
         if (!isSupportedArchiveType(pkg.archiveType())) {
             LOGGER.debug("pkg {} is invalid because archive type does not match query: requested=supported, actual={}", pkg.filename(), pkg.archiveType());
             return false;
