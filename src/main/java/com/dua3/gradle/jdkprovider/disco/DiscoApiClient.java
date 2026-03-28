@@ -177,20 +177,35 @@ public final class DiscoApiClient {
      *         package is found; otherwise, an empty {@code Optional}.
      */
     public Optional<DiscoPackage> findPackage(JdkQuery jdkQuery) {
+        return findPackages(jdkQuery).stream().findFirst();
+    }
+
+    /**
+     * Finds all suitable {@link DiscoPackage}s based on the provided {@link JdkQuery},
+     * sorted from most preferred to least preferred.
+     *
+     * @param jdkQuery the {@link JdkQuery} instance containing parameters used to query the Disco API.
+     * @return a list of matching packages in preference order, or an empty list on query failure.
+     */
+    public List<DiscoPackage> findPackages(JdkQuery jdkQuery) {
         URI uri = buildPackagesQueryUrl(jdkQuery);
         LOGGER.info("[JDK Provider - DiscoAPI Client] Querying: {}", uri);
         try {
             JSONArray arr = getJsonArray(uri);
             return getDiscoPackages(arr).stream()
                     .filter(pkg -> filterQueryResult(jdkQuery, pkg))
-                    .max(Comparator.comparing(DiscoPackage::libcType, Comparator.reverseOrder())
-                            .thenComparing(DiscoPackage::version)
-                            .thenComparing(DiscoApiClient::archiveProprity)
-                    );
+                    .sorted(discoPackageComparator().reversed())
+                    .toList();
         } catch (IOException e) {
             LOGGER.info("[JDK Provider - DiscoAPI Client] query failed for {}: {}", uri, e.toString());
-            return Optional.empty();
+            return List.of();
         }
+    }
+
+    private static Comparator<DiscoPackage> discoPackageComparator() {
+        return Comparator.comparing(DiscoPackage::libcType, Comparator.reverseOrder())
+                .thenComparing(DiscoPackage::version)
+                .thenComparing(DiscoApiClient::archiveProprity);
     }
 
     private static boolean filterQueryResult(JdkQuery jdkQuery, DiscoPackage pkg) {

@@ -18,6 +18,7 @@ import com.dua3.gradle.jdkprovider.disco.DiscoApiClient;
 import com.dua3.gradle.jdkprovider.local.JdkInstallation;
 import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
+import com.dua3.gradle.jdkprovider.types.DiscoPackage;
 import com.dua3.gradle.jdkprovider.types.JdkQuery;
 import org.gradle.api.GradleException;
 import org.gradle.api.logging.Logger;
@@ -25,6 +26,7 @@ import org.gradle.api.logging.Logging;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,7 +59,7 @@ public class JdkResolver {
     public Optional<JdkInstallation> resolve(JdkQuery jdkQuery, boolean offlineMode) {
         LOGGER.debug("[JDK Provider - Resolver] Resolving toolchain for {}", jdkQuery);
 
-        return new LocalJdkScanner()
+        return createLocalJdkScanner()
                 // first try to find an existing installation
                 .getCompatibleInstalledJdks(jdkQuery)
                 .stream()
@@ -73,23 +75,57 @@ public class JdkResolver {
                     LOGGER.debug("[JDK Provider - Resolver] No matching local JDK found, querying DiscoAPI");
 
                     try {
-                        return new DiscoApiClient().findPackage(jdkQuery)
-                                .map(pkg -> {
-                                    try {
-                                        Path jdkHome = new JdkProvisioner()
-                                                .provision(pkg.downloadUri(), pkg.sha256(), pkg.filename(), pkg.archiveType());
-                                        return LocalJdkScanner.readJdkSpec(jdkHome).orElse(null);
-                                    } catch (InterruptedException e) {
-                                        LOGGER.debug("[JDK Provider - Resolver] Provisioning interrupted, aborting");
-                                        Thread.currentThread().interrupt();
-                                        return null;
-                                    } catch (IOException e) {
-                                        throw new GradleException("Failed to download and provision JDK from DiscoAPI: " + e.getMessage(), e);
-                                    }
-                                });
+                        return provisionFirstAvailableJdk(createDiscoApiClient().findPackages(jdkQuery));
                     } catch (RuntimeException e) {
                         throw new GradleException("Error querying DiscoAPI: " + e.getMessage(), e);
                     }
                 });
+    }
+
+    protected LocalJdkScanner createLocalJdkScanner() {
+        return new LocalJdkScanner();
+    }
+
+    protected DiscoApiClient createDiscoApiClient() {
+        return new DiscoApiClient();
+    }
+
+    protected JdkProvisioner createJdkProvisioner() {
+        return new JdkProvisioner();
+    }
+
+    protected Optional<JdkInstallation> readJdkSpec(Path jdkHome) {
+        return LocalJdkScanner.readJdkSpec(jdkHome);
+    }
+
+    protected Path provisionPackage(DiscoPackage pkg) throws IOException, InterruptedException {
+        return createJdkProvisioner().provision(pkg.downloadUri(), pkg.sha256(), pkg.filename(), pkg.archiveType());
+    }
+
+    private Optional<JdkInstallation> provisionFirstAvailableJdk(List<DiscoPackage> packages) {
+        IOException lastException = null;
+        for (DiscoPackage pkg : packages) {
+            try {
+                Path jdkHome = provisionPackage(pkg);
+                return readJdkSpec(jdkHome);
+            } catch (InterruptedException e) {
+                LOGGER.debug("[JDK Provider - Resolver] Provisioning interrupted, aborting");
+                Thread.currentThread().interrupt();
+                return Optional.empty();
+            } catch (IOException e) {
+                lastException = e;
+                LOGGER.warn(
+                        "[JDK Provider - Resolver] Failed to provision JDK from {} ({}): {}. Trying next matching JDK.",
+                        pkg.downloadUri(),
+                        pkg.distribution(),
+                        e.toString()
+                );
+            }
+        }
+
+        if (lastException != null) {
+            throw new GradleException("Failed to download and provision JDK from DiscoAPI: " + lastException.getMessage(), lastException);
+        }
+        return Optional.empty();
     }
 }
