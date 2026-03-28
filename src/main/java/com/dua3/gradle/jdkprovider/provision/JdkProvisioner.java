@@ -87,7 +87,33 @@ public final class JdkProvisioner {
 
         Files.createDirectories(CACHED_DOWNLOADS_DIR);
         Path archive = CACHED_DOWNLOADS_DIR.resolve(cacheKey + '-' + fileName);
+        try {
+            ensureDownloadedVerifiedAndExtracted(downloadUri, archive, expectedSha256, installationDir, marker);
+        } catch (IOException firstFailure) {
+            if (!Files.isRegularFile(archive)) {
+                throw firstFailure;
+            }
 
+            // Corrupt/partial archives may be left from aborted downloads. Remove and retry once.
+            LOGGER.warn("[JDK Provider - Provisioner] Archive appears invalid ({}), deleting and retrying once: {}", firstFailure.toString(), archive);
+            Files.deleteIfExists(archive);
+            ensureDownloadedVerifiedAndExtracted(downloadUri, archive, expectedSha256, installationDir, marker);
+        }
+
+        Path home = LocalJdkScanner.detectJdkHome(installationDir);
+        if (home == null) {
+            throw new IOException("Failed to detect JDK home in jdks directory: " + installationDir);
+        }
+        return home;
+    }
+
+    private void ensureDownloadedVerifiedAndExtracted(
+            URI downloadUri,
+            Path archive,
+            String expectedSha256,
+            Path installationDir,
+            Path marker
+    ) throws IOException, InterruptedException {
         if (!Files.isRegularFile(archive)) {
             LOGGER.lifecycle("Downloading JDK from {}", downloadUri);
             HttpDownloader downloader = new HttpDownloader(
@@ -124,12 +150,6 @@ public final class JdkProvisioner {
 
         // Create completion marker
         Files.writeString(marker, "ok");
-
-        Path home = LocalJdkScanner.detectJdkHome(installationDir);
-        if (home == null) {
-            throw new IOException("Failed to detect JDK home in jdks directory: " + installationDir);
-        }
-        return home;
     }
 
     /**
@@ -309,7 +329,7 @@ public final class JdkProvisioner {
      * @return the number of retry attempts, as an integer.
      */
     private int retries() {
-        return 10_000;
+        return 2;
     }
 
     /**
