@@ -124,6 +124,8 @@ public final class DiscoApiClient {
 
         // package type
         params.add("package_type=jdk");
+        // latest available version
+        params.add("latest=available");
         // download options
         params.add("directly_downloadable=true");
         params.add("archive_type=tar.gz");
@@ -324,7 +326,7 @@ public final class DiscoApiClient {
             return "version_by_definition=latest";
         }
         if (versionSpec.isFixedFeature()) {
-            return "jdk_version=" + versionSpec.min().feature() + ".*";
+            return "jdk_version=" + versionSpec.min().feature();
         }
         return "version=" + versionSpec;
     }
