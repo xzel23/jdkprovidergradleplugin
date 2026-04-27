@@ -61,6 +61,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
     /**
      * Default constructor.
      */
+    @SuppressWarnings("ConstructorNotProtectedInAbstractClass")
     public JdkProviderPlugin() {
         // nothing to do
     }

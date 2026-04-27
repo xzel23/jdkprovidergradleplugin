@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -157,7 +156,7 @@ public final class LocalJdkScanner {
         environment.entrySet().stream()
                 .filter(e -> e.getKey().startsWith("JAVA_HOME"))
                 .filter(e -> !e.getValue().isBlank())
-                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> {
                     Path candidatePath = Paths.get(e.getValue()).toAbsolutePath().normalize();
                     if (Files.isDirectory(candidatePath)) {

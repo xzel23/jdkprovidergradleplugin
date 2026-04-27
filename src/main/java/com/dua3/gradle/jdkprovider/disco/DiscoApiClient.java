@@ -59,27 +59,27 @@ public final class DiscoApiClient {
     private static final int RETRIES = 2;
 
     private static final Map<String, String> VENDOR_MAP = Map.ofEntries(
-             Map.entry("aoj", "adoptopenjdk"),
-             Map.entry("dragonwell", "alibaba"),
-             Map.entry("corretto", "amazon"),
-             Map.entry("zulu", "azul"),
-             Map.entry("liberica", "bellsoft"),
-             Map.entry("ojdk_build", "community"),
-             Map.entry("trava", "community"),
-             Map.entry("temurin", "eclipse"),
-             Map.entry("gluon", "gluon"),
-             Map.entry("bisheng", "huawei"),
-             Map.entry("semeru", "ibm"),
-             Map.entry("jetbrains", "jetbrains"),
-             Map.entry("jbr", "jetbrains"),
-             Map.entry("microsoft", "microsoft"),
-             Map.entry("open_logic", "openlogic"),
-             Map.entry("graalvm", "oracle"),
-             Map.entry("oracle", "oracle"),
-             Map.entry("mandrel", "redhat"),
-             Map.entry("redhat", "red_hat"),
-             Map.entry("sap_machine", "sap"),
-             Map.entry("kona", "tencent")
+            Map.entry("aoj", "adoptopenjdk"),
+            Map.entry("dragonwell", "alibaba"),
+            Map.entry("corretto", "amazon"),
+            Map.entry("zulu", "azul"),
+            Map.entry("liberica", "bellsoft"),
+            Map.entry("ojdk_build", "community"),
+            Map.entry("trava", "community"),
+            Map.entry("temurin", "eclipse"),
+            Map.entry("gluon", "gluon"),
+            Map.entry("bisheng", "huawei"),
+            Map.entry("semeru", "ibm"),
+            Map.entry("jetbrains", "jetbrains"),
+            Map.entry("jbr", "jetbrains"),
+            Map.entry("microsoft", "microsoft"),
+            Map.entry("open_logic", "openlogic"),
+            Map.entry("graalvm", "oracle"),
+            Map.entry("oracle", "oracle"),
+            Map.entry("mandrel", "redhat"),
+            Map.entry("redhat", "red_hat"),
+            Map.entry("sap_machine", "sap"),
+            Map.entry("kona", "tencent")
     );
 
     /**

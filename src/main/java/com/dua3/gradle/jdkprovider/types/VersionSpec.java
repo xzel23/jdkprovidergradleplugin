@@ -270,10 +270,10 @@ public final class VersionSpec {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof VersionSpec that)) return false;
-        return Objects.equals(min, that.min) &&
-                Objects.equals(max, that.max) &&
-                Objects.equals(text, that.text);
+        if (!(obj instanceof VersionSpec other)) return false;
+        return Objects.equals(min, other.min) &&
+                Objects.equals(max, other.max) &&
+                Objects.equals(text, other.text);
     }
 
     @Override

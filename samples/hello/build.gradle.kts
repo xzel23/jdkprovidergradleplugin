@@ -11,6 +11,6 @@ repositories {
 }
 
 jdk {
-    version 25
+    version = 25
     nativeImageCapable = false
 }

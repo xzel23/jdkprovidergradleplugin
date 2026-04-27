@@ -95,7 +95,7 @@ public final class JdkProvisioner {
             }
 
             // Corrupt/partial archives may be left from aborted downloads. Remove and retry once.
-            LOGGER.warn("[JDK Provider - Provisioner] Archive appears invalid ({}), deleting and retrying once: {}", firstFailure.toString(), archive);
+            LOGGER.warn("[JDK Provider - Provisioner] Archive appears invalid ({}), deleting and retrying once: {}", firstFailure, archive);
             Files.deleteIfExists(archive);
             ensureDownloadedVerifiedAndExtracted(downloadUri, archive, expectedSha256, installationDir, marker);
         }

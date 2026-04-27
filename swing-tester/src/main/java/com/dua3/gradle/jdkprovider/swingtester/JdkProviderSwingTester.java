@@ -71,6 +71,11 @@ public final class JdkProviderSwingTester {
         // utility class
     }
 
+    /**
+     * The main entry point for the application.
+     *
+     * @param args command-line arguments passed to the application; not utilized in this method.
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(JdkProviderSwingTester::createAndShowUi);
     }

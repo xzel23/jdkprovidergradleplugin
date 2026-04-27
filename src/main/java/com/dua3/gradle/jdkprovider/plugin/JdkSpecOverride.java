@@ -30,6 +30,7 @@ public abstract class JdkSpecOverride {
      * @param objects the object factory used to create property instances for this configuration
      */
     @Inject
+    @SuppressWarnings("ConstructorNotProtectedInAbstractClass") // needed for @Inject
     public JdkSpecOverride(String name, ObjectFactory objects) {
         this.name = name;
         this.os = objects.property(OSFamily.class);

@@ -57,6 +57,7 @@ public abstract class JdkExtension {
      *                configuration, such as operating system, system architecture, version,
      *                vendor, and boolean flags for specific capabilities.
      */
+    @SuppressWarnings("ConstructorNotProtectedInAbstractClass") // needed for @Inject
     @Inject
     public JdkExtension(ObjectFactory objects) {
         this.os = objects.property(OSFamily.class);
