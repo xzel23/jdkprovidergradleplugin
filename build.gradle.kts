@@ -29,14 +29,14 @@ plugins {
     `java-library`
     `java-gradle-plugin`
     `maven-publish`
-    id("com.github.ben-manes.versions") version "0.53.0"
+    id("com.github.ben-manes.versions") version "0.54.0"
     id("com.gradle.plugin-publish") version "2.1.1"
 }
 
 /* define group and version for publishing */
 
 group = "com.dua3.gradle"
-version = "0.5.2"
+version = "0.6.0"
 
 /* compile using Java 21 */
 
