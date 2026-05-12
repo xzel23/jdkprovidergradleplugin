@@ -155,11 +155,17 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
 
-                // automatically set release if not set
+                // Ensure 'release' is always set, but allow user overrides
                 int featureVersion = installation.jdkSpec().version().feature();
-                if (featureVersion >= 9 && (!task.getOptions().getRelease().isPresent() || task.getOptions().getRelease().get() > featureVersion)) {
-                    task.getOptions().getRelease().set(featureVersion);
-                    logger.info("[JDK Provider] Setting release to {} for task '{}'", featureVersion, task.getName());
+                if (featureVersion >= 9) {
+                    // Set the default (convention) to the resolved JDK version
+                    task.getOptions().getRelease().convention(featureVersion);
+
+                    // Safety cap: if the final value is higher than supported by the compiler, override it
+                    if (task.getOptions().getRelease().get() > featureVersion) {
+                        task.getOptions().getRelease().set(featureVersion);
+                        logger.info("[JDK Provider] Overriding release to {} for task '{}' (requested version was too high)", featureVersion, task.getName());
+                    }
                 }
             });
 
