@@ -156,12 +156,10 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 task.getOptions().getForkOptions().setExecutable(javac);
 
                 // automatically set release if not set
-                if (!task.getOptions().getRelease().isPresent()) {
-                    int featureVersion = installation.jdkSpec().version().feature();
-                    if (featureVersion >= 9) {
-                        task.getOptions().getRelease().set(featureVersion);
-                        logger.info("[JDK Provider] Setting release to {} for task '{}'", featureVersion, task.getName());
-                    }
+                int featureVersion = installation.jdkSpec().version().feature();
+                if (featureVersion >= 9 && (!task.getOptions().getRelease().isPresent() || task.getOptions().getRelease().get() > featureVersion)) {
+                    task.getOptions().getRelease().set(featureVersion);
+                    logger.info("[JDK Provider] Setting release to {} for task '{}'", featureVersion, task.getName());
                 }
             });
 
