@@ -169,7 +169,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             p.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
                 int featureVersion = globalJdkInstallation.jdkSpec().version().feature();
                 p.getConfigurations().configureEach(configuration -> {
-                    if (configuration.isCanBeResolved() && isJavaConfiguration(configuration.getName())) {
+                    if ((configuration.isCanBeResolved() || configuration.isCanBeConsumed()) && isJavaConfiguration(configuration.getName())) {
                         configuration.getAttributes().attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, featureVersion);
                     }
                 });
@@ -182,7 +182,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
     }
 
     private static boolean isJavaConfiguration(String name) {
-        return name.endsWith("Classpath") || name.equals("compileOnly") || name.equals("runtimeOnly") || name.equals("implementation") || name.equals("api");
+        return name.endsWith("Classpath") || name.equals("compileOnly") || name.equals("runtimeOnly") || name.equals("implementation") || name.equals("api") || name.endsWith("Elements");
     }
 
     private JdkQuery createJdkQuery(JdkExtension extension, JdkSpecOverride override) {
