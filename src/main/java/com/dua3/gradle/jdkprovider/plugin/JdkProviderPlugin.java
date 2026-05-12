@@ -161,15 +161,11 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                         task.getName(), featureVersion, task.getOptions().getRelease().map(String::valueOf).orElse("NA")
                 );
                 if (featureVersion >= 9) {
-                    // Set the default (convention) to the resolved JDK version
-                    logger.info("[JDK Provider] setting convention for task '{}' to version {}", task.getName(), featureVersion);
-                    task.getOptions().getRelease().convention(featureVersion);
-
-                    // Safety cap: if the final value is higher than supported by the compiler, override it
-                    if (task.getOptions().getRelease().get() > featureVersion) {
-                        task.getOptions().getRelease().set(featureVersion);
-                        logger.info("[JDK Provider] Overriding release to {} for task '{}' (requested version was too high)", featureVersion, task.getName());
-                    }
+                    // Force the release version to match the resolved JDK version,
+                    // as we are explicitly overriding any other toolchain/JVM settings.
+                    // This can still be overridden by the user in the task configuration.
+                    logger.info("[JDK Provider] setting release for task '{}' to version {}", task.getName(), featureVersion);
+                    task.getOptions().getRelease().set(featureVersion);
                 }
                 logger.info("[JDK Provider] task '{}' uses release {}", task.getName(), task.getOptions().getRelease().get());
             });
