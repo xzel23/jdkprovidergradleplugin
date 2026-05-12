@@ -24,6 +24,8 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.attributes.java.TargetJvmVersion;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -57,6 +59,8 @@ import java.util.Map;
  * plugin throws a {@link GradleException} with details about the failure.
  */
 public abstract class JdkProviderPlugin implements Plugin<Project> {
+
+    private static final String JDK_HOME = "jdkHome";
 
     /**
      * Default constructor.
@@ -128,26 +132,26 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             p.getTasks().withType(JavaExec.class).configureEach(task -> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String java = installation.jdkHome().resolve("bin/java" + executableExtension).toAbsolutePath().toString();
-                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
                 task.setExecutable(java);
             });
             p.getTasks().withType(Test.class).configureEach(task -> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String java = installation.jdkHome().resolve("bin/java" + executableExtension).toAbsolutePath().toString();
-                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
                 task.setExecutable(java);
             });
             p.getTasks().withType(Javadoc.class).configureEach(task -> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String javadoc = installation.jdkHome().resolve("bin/javadoc" + executableExtension).toAbsolutePath().toString();
-                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
                 task.setExecutable(javadoc);
             });
 
             p.getTasks().withType(JavaCompile.class).configureEach(task -> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String javac = installation.jdkHome().resolve("bin/javac" + executableExtension).toAbsolutePath().toString();
-                task.getInputs().property("jdkHome", installation.jdkHome().toAbsolutePath().toString());
+                task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
 
@@ -159,6 +163,16 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                         logger.info("[JDK Provider] Setting release to {} for task '{}'", featureVersion, task.getName());
                     }
                 }
+            });
+
+            // Set TargetJvmVersion attribute for dependency resolution
+            p.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
+                int featureVersion = globalJdkInstallation.jdkSpec().version().feature();
+                p.getConfigurations().configureEach(configuration -> {
+                    if (configuration.isCanBeResolved()) {
+                        configuration.getAttributes().attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, featureVersion);
+                    }
+                });
             });
 
             // set resolved JDK properties in extension (read-only for build scripts)
