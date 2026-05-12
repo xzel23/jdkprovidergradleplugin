@@ -29,6 +29,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -431,7 +432,7 @@ public class JdkProvisioner {
         // Search upwards for the installation directory (which should contain .complete)
         while (installationDir != null && !Files.exists(installationDir.resolve(".complete"))) {
             installationDir = installationDir.getParent();
-            if (installationDir != null && installationDir.equals(CACHED_JDKS_DIR)) {
+            if (Objects.equals(installationDir, CACHED_JDKS_DIR)) {
                 installationDir = null;
                 break;
             }
