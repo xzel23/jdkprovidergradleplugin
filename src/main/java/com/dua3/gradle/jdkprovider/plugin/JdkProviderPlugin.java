@@ -113,7 +113,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             JdkInstallation globalJdkInstallation = jdkResolver.resolve(globalJdkQuery, offlineMode)
                     .orElseThrow(() -> new GradleException("No matching JDK found for " + globalJdkQuery));
 
-            logger.debug("[JDK Provider - Plugin] Global JDK for build: {}", globalJdkInstallation.jdkHome());
+            logger.debug("[JDK Provider - Plugin] Global JDK for build: {} ({})", globalJdkInstallation.jdkSpec(), globalJdkInstallation.jdkHome());
             logger.lifecycle("JDK for this build: {}", globalJdkInstallation.jdkSpec());
 
             // resolve overrides
@@ -123,7 +123,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 JdkInstallation overrideInstallation = jdkResolver.resolve(overrideQuery, offlineMode)
                         .orElseThrow(() -> new GradleException("No matching JDK found for override '" + override.getName() + "': " + overrideQuery));
                 overrideInstallations.put(override.getName(), overrideInstallation);
-                logger.lifecycle("JDK override for '{}': {}", override.getName(), overrideInstallation.jdkSpec());
+                logger.lifecycle("JDK override for '{}': {} ()", override.getName(), overrideInstallation.jdkSpec(), globalJdkInstallation.jdkHome());
             });
 
             // wire tasks
@@ -157,8 +157,12 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
 
                 // Ensure 'release' is always set, but allow user overrides
                 int featureVersion = installation.jdkSpec().version().feature();
+                logger.info("[JDK Provider] active compiler for task '{}' has feature version {}, requested version is {}",
+                        task.getName(), featureVersion, task.getOptions().getRelease().map(String::valueOf).orElse("NA")
+                );
                 if (featureVersion >= 9) {
                     // Set the default (convention) to the resolved JDK version
+                    logger.info("[JDK Provider] setting convention for task '{}' to version {}", task.getName(), featureVersion);
                     task.getOptions().getRelease().convention(featureVersion);
 
                     // Safety cap: if the final value is higher than supported by the compiler, override it
@@ -167,6 +171,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                         logger.info("[JDK Provider] Overriding release to {} for task '{}' (requested version was too high)", featureVersion, task.getName());
                     }
                 }
+                logger.info("[JDK Provider] task '{}' uses release {}", task.getName(), task.getOptions().getRelease().get());
             });
 
             // Set TargetJvmVersion attribute for dependency resolution
