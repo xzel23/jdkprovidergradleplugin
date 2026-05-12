@@ -44,7 +44,7 @@ Key points:
 ## Requirements
 
 - Java 21 or newer
-- Gradle 9+ (for Windows ARM: Gradle 9.2.1)
+- Gradle 9+ (for Windows ARM: Gradle 9.2.1+)
 
 ## Applying the plugin
 
@@ -151,7 +151,7 @@ An example `build.gradle.kts`:
 ```kotlin
     plugins {
         application
-        id("com.dua3.gradle.jdkprovider") version "0.5.2"
+        id("com.dua3.gradle.jdkprovider") version "0.7.0"
         id("org.beryx.jlink") version "4.0.0"
     }
     
