@@ -34,12 +34,13 @@ import java.util.stream.Stream;
 /**
  * Downloads, verifies, and extracts JDK archives into a managed cache and returns the JDK home path.
  */
-public final class JdkProvisioner {
+public class JdkProvisioner {
     private static final Logger LOGGER = Logging.getLogger(JdkProvisioner.class);
 
     private static final Path CACHE_DIR = getGradleUserHome().resolve("caches").resolve("jdkproviderplugin");
     private static final Path CACHED_JDKS_DIR = CACHE_DIR.resolve("jdks");
     private static final Path CACHED_DOWNLOADS_DIR = getCacheDir().resolve("downloads");
+    private static final Path BLACKLIST_FILE = CACHE_DIR.resolve("blacklist.txt");
 
     /**
      * Default constructor for the JdkProvisioner class.
@@ -384,4 +385,61 @@ public final class JdkProvisioner {
         }
     }
 
+    /**
+     * Blacklists a download URI to avoid redownloading it in the future.
+     *
+     * @param downloadUri the URI to blacklist
+     */
+    public void blacklist(URI downloadUri) {
+        LOGGER.warn("[JDK Provider - Provisioner] Blacklisting invalid JDK URI: {}", downloadUri);
+        try {
+            Files.createDirectories(BLACKLIST_FILE.getParent());
+            Files.writeString(BLACKLIST_FILE, downloadUri + System.lineSeparator(), StandardCharsets.UTF_8, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            LOGGER.error("[JDK Provider - Provisioner] Failed to update blacklist: {}", e.toString());
+        }
+    }
+
+    /**
+     * Checks if a download URI is blacklisted.
+     *
+     * @param downloadUri the URI to check
+     * @return {@code true} if the URI is blacklisted, {@code false} otherwise
+     */
+    public boolean isBlacklisted(URI downloadUri) {
+        if (!Files.isRegularFile(BLACKLIST_FILE)) {
+            return false;
+        }
+
+        try (Stream<String> lines = Files.lines(BLACKLIST_FILE)) {
+            String uriString = downloadUri.toString();
+            return lines.anyMatch(line -> line.trim().equals(uriString));
+        } catch (IOException e) {
+            LOGGER.error("[JDK Provider - Provisioner] Failed to read blacklist: {}", e.toString());
+            return false;
+        }
+    }
+
+    /**
+     * Removes an extracted JDK directory.
+     *
+     * @param jdkHome the home directory of the JDK to remove
+     * @throws IOException if an I/O error occurs
+     */
+    public void removeExtractedJdk(Path jdkHome) throws IOException {
+        Path installationDir = jdkHome;
+        // Search upwards for the installation directory (which should contain .complete)
+        while (installationDir != null && !Files.exists(installationDir.resolve(".complete"))) {
+            installationDir = installationDir.getParent();
+            if (installationDir != null && installationDir.equals(CACHED_JDKS_DIR)) {
+                installationDir = null;
+                break;
+            }
+        }
+
+        if (installationDir != null) {
+            LOGGER.info("[JDK Provider - Provisioner] Removing invalid JDK installation at {}", installationDir);
+            deleteRecursively(installationDir);
+        }
+    }
 }

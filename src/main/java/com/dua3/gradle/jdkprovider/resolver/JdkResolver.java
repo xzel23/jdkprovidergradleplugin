@@ -41,6 +41,7 @@ public class JdkResolver {
      * Constructs a new instance of the JdkResolver.
      */
     public JdkResolver() {
+        // Default constructor
     }
 
     /**
@@ -75,7 +76,11 @@ public class JdkResolver {
                     LOGGER.debug("[JDK Provider - Resolver] No matching local JDK found, querying DiscoAPI");
 
                     try {
-                        return provisionFirstAvailableJdk(createDiscoApiClient().findPackages(jdkQuery));
+                        JdkProvisioner provisioner = createJdkProvisioner();
+                        List<DiscoPackage> packages = createDiscoApiClient().findPackages(jdkQuery).stream()
+                                .filter(pkg -> !provisioner.isBlacklisted(pkg.downloadUri()))
+                                .toList();
+                        return provisionFirstAvailableJdk(jdkQuery, packages);
                     } catch (RuntimeException e) {
                         throw new GradleException("Error querying DiscoAPI: " + e.getMessage(), e);
                     }
@@ -102,12 +107,24 @@ public class JdkResolver {
         return createJdkProvisioner().provision(pkg.downloadUri(), pkg.sha256(), pkg.filename(), pkg.archiveType());
     }
 
-    private Optional<JdkInstallation> provisionFirstAvailableJdk(List<DiscoPackage> packages) {
+    private Optional<JdkInstallation> provisionFirstAvailableJdk(JdkQuery query, List<DiscoPackage> packages) {
         IOException lastException = null;
         for (DiscoPackage pkg : packages) {
             try {
                 Path jdkHome = provisionPackage(pkg);
-                return readJdkSpec(jdkHome);
+                Optional<JdkInstallation> installation = readJdkSpec(jdkHome);
+
+                if (installation.isPresent()) {
+                    JdkInstallation inst = installation.get();
+                    if (JdkQuery.isCompatible(inst.jdkSpec(), query)) {
+                        return installation;
+                    } else {
+                        LOGGER.warn("[JDK Provider - Resolver] Provisioned JDK at {} is not compatible with query {}. Actual: {}", jdkHome, query, inst.jdkSpec());
+                        JdkProvisioner provisioner = createJdkProvisioner();
+                        provisioner.blacklist(pkg.downloadUri());
+                        provisioner.removeExtractedJdk(jdkHome);
+                    }
+                }
             } catch (InterruptedException e) {
                 LOGGER.debug("[JDK Provider - Resolver] Provisioning interrupted, aborting");
                 Thread.currentThread().interrupt();
