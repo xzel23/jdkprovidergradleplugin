@@ -2,6 +2,7 @@ package com.dua3.gradle.jdkprovider.resolver;
 
 import com.dua3.gradle.jdkprovider.disco.DiscoApiClient;
 import com.dua3.gradle.jdkprovider.local.JdkInstallation;
+import com.dua3.gradle.jdkprovider.local.LocalJdkScanner;
 import com.dua3.gradle.jdkprovider.provision.JdkProvisioner;
 import com.dua3.gradle.jdkprovider.types.DiscoPackage;
 import com.dua3.gradle.jdkprovider.types.JdkQuery;
@@ -134,6 +135,12 @@ class JdkValidationTest {
             this.baseUrl = baseUrl;
             this.badJdkHome = badJdkHome;
             this.goodJdkHome = goodJdkHome;
+        }
+
+        @Override
+        protected LocalJdkScanner createLocalJdkScanner() {
+            // Return a scanner that finds no local JDKs to isolate the test from the environment
+            return new LocalJdkScanner(java.util.Map.of(), java.nio.file.Path.of("/non-existent-path"));
         }
 
         @Override

@@ -73,7 +73,7 @@ public final class LocalJdkScanner {
      * @param environment the environment variables to use for scanning
      * @param cacheDir    the cache directory to scan for JDKs
      */
-    LocalJdkScanner(Map<String, String> environment, Path cacheDir) {
+    public LocalJdkScanner(Map<String, String> environment, Path cacheDir) {
         this.environment = environment;
         this.cacheDir = cacheDir;
     }
