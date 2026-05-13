@@ -326,3 +326,7 @@ Copyright (c) Axel Howind.
 ## Contributing
 
 Contributions are welcome! Please see `CONTRIBUTING.md` for guidelines.
+
+## Security
+
+Please see `SECURITY.md` for the security policy and how to report vulnerabilities.
