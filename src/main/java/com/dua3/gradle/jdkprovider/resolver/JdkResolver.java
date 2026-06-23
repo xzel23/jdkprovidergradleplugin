@@ -87,22 +87,59 @@ public class JdkResolver {
                 });
     }
 
+    /**
+     * Creates and returns a new instance of {@link LocalJdkScanner} to facilitate scanning
+     * and identification of locally installed JDKs.
+     *
+     * @return a newly instantiated {@code LocalJdkScanner} object for discovering local JDK installations.
+     */
     protected LocalJdkScanner createLocalJdkScanner() {
         return new LocalJdkScanner();
     }
 
+    /**
+     * Creates and returns a new instance of the {@link DiscoApiClient}.
+     *
+     * @return a {@link DiscoApiClient} instance, used for interacting with the DiscoAPI.
+     */
     protected DiscoApiClient createDiscoApiClient() {
         return new DiscoApiClient();
     }
 
+    /**
+     * Creates and returns an instance of {@link JdkProvisioner}, which is responsible
+     * for provisioning JDKs based on specified requirements.
+     *
+     * @return a new instance of {@link JdkProvisioner} to handle JDK provisioning.
+     */
     protected JdkProvisioner createJdkProvisioner() {
         return new JdkProvisioner();
     }
 
+    /**
+     * Reads the JDK specification from the specified JDK home directory.
+     *
+     * @param jdkHome the filesystem path to the JDK home directory.
+     * @return an {@code Optional} containing a {@link JdkInstallation} if the JDK
+     *         specification is successfully read, or an empty {@code Optional} if
+     *         the JDK home directory does not contain a valid JDK specification.
+     */
     protected Optional<JdkInstallation> readJdkSpec(Path jdkHome) {
         return LocalJdkScanner.readJdkSpec(jdkHome);
     }
 
+    /**
+     * Provisions a package by downloading, verifying, and extracting the specified package archive.
+     * This method delegates the operation to a {@link JdkProvisioner} instance to handle the actual
+     * provisioning logic, including downloading the archive, checking its integrity with the provided
+     * SHA-256 checksum, and extracting it to a specified location.
+     *
+     * @param pkg the {@link DiscoPackage} containing metadata about the package to be provisioned,
+     *            including its download URI, checksum, filename, and archive type.
+     * @return the {@link Path} to the root directory of the provisioned package.
+     * @throws IOException          if an error occurs during downloading, verifying, or extracting the package.
+     * @throws InterruptedException if the thread is interrupted while waiting for an operation to complete.
+     */
     protected Path provisionPackage(DiscoPackage pkg) throws IOException, InterruptedException {
         return createJdkProvisioner().provision(pkg.downloadUri(), pkg.sha256(), pkg.filename(), pkg.archiveType());
     }
