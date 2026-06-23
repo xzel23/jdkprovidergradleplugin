@@ -32,7 +32,10 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.jvm.toolchain.JavaCompiler;
+import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.gradle.jvm.toolchain.JavadocTool;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -133,6 +136,9 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String java = installation.jdkHome().resolve("bin/java" + executableExtension).toAbsolutePath().toString();
                 task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
+
+                // Disarm the native toolchain launcher property
+                task.getJavaLauncher().set((JavaLauncher) null);
                 task.setExecutable(java);
             });
             p.getTasks().withType(Test.class).configureEach(task -> {
@@ -140,11 +146,19 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 String java = installation.jdkHome().resolve("bin/java" + executableExtension).toAbsolutePath().toString();
                 task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
                 task.setExecutable(java);
+
+                // Disarm the native toolchain launcher property
+                task.getJavaLauncher().set((JavaLauncher) null);
+                task.setExecutable(java);
             });
             p.getTasks().withType(Javadoc.class).configureEach(task -> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String javadoc = installation.jdkHome().resolve("bin/javadoc" + executableExtension).toAbsolutePath().toString();
                 task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
+                task.setExecutable(javadoc);
+
+                // Disarm the native toolchain javadoc tool property
+                task.getJavadocTool().set((JavadocTool) null);
                 task.setExecutable(javadoc);
             });
 
@@ -152,6 +166,10 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 JdkInstallation installation = getInstallationForTask(task.getName(), p, globalJdkInstallation, overrideInstallations);
                 String javac = installation.jdkHome().resolve("bin/javac" + executableExtension).toAbsolutePath().toString();
                 task.getInputs().property(JDK_HOME, installation.jdkHome().toAbsolutePath().toString());
+
+                // Clear the toolchain compiler property to prevent Gradle 9.6.0 cache serialization failures
+                task.getJavaCompiler().set((JavaCompiler) null);
+
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
 
@@ -160,6 +178,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 logger.info("[JDK Provider] active compiler for task '{}' has feature version {}, requested version is {}",
                         task.getName(), featureVersion, task.getOptions().getRelease().map(String::valueOf).orElse("NA")
                 );
+
                 if (featureVersion >= 9) {
                     // Force the release version to match the resolved JDK version,
                     // as we are explicitly overriding any other toolchain/JVM settings.
@@ -167,6 +186,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                     logger.info("[JDK Provider] setting release for task '{}' to version {}", task.getName(), featureVersion);
                     task.getOptions().getRelease().set(featureVersion);
                 }
+
                 logger.info("[JDK Provider] task '{}' uses release {}", task.getName(), task.getOptions().getRelease().get());
             });
 
