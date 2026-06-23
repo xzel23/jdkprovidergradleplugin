@@ -19,9 +19,9 @@ import org.gradle.kotlin.dsl.withType
 
 val recordBuilderVersion = "52"
 val commonsCompressVersion = "1.28.0"
-val jsonVersion = "20251224"
-val mockWebServerVersion = "5.3.2"
-val junitVersion = "6.0.3"
+val jsonVersion = "20260522"
+val mockWebServerVersion = "5.4.0"
+val junitVersion = "6.1.0"
 
 /* plugins */
 
@@ -36,7 +36,7 @@ plugins {
 /* define group and version for publishing */
 
 group = "com.dua3.gradle"
-version = "0.7.0"
+version = "0.8.0-SNAPSHOT"
 
 /* compile using Java 21 */
 
