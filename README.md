@@ -122,6 +122,40 @@ What the plugin does:
 `langVersion` can also be set inside a source-set override. An override's value takes precedence over the top-level
 value. If neither is set, each source set defaults to the feature version of its resolved JDK.
 
+### Using an Override for Native Image Tasks
+
+Use `getJavaLauncher(project, overrideName)` to assign a resolved override to a native-image binary. This lets
+native image tasks use a different JDK without changing the JDK used for ordinary Java compilation.
+
+```kotlin
+jdk {
+    version = 26
+    langVersion = 25
+    javaFxBundled = true
+
+    overrides {
+        create("native") {
+            version = 25
+            langVersion = 25
+            javaFxBundled = true
+            nativeImageCapable = true
+        }
+    }
+}
+
+graalvmNative {
+    binaries {
+        all {
+            javaLauncher = jdk.getJavaLauncher(project, "native")
+        }
+    }
+}
+```
+
+The launcher applies to every task of the configured native binary, including `nativeCompile`, `nativeRun`, and the
+corresponding test-binary tasks. Set `nativeImageCapable = true`: this is an exact selection criterion, so `false`
+would select a JDK that does not provide the `native-image` executable.
+
 ## Rationale
 
 This plugin provides a more fine‑grained and explicit way to control the JDK used for building your project than Gradle Toolchains. If you prefer strict, reproducible selection of a particular JDK flavor (for example, with or without bundled JavaFX), this plugin aims to make that straightforward.

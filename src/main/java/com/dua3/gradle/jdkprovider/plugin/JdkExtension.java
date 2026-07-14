@@ -17,6 +17,7 @@ package com.dua3.gradle.jdkprovider.plugin;
 import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
+import org.gradle.api.GradleException;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
@@ -218,9 +219,33 @@ public abstract class JdkExtension {
      *         which includes JDK metadata and the executable path
      */
     public Provider<JavaLauncher> getJavaLauncher(Project project) {
-        return jdkSpec.map(spec -> {
+        return createJavaLauncher(project, jdkSpec, jdkHome);
+    }
+
+    /**
+     * Retrieves a provider for the Java launcher resolved for a named override.
+     *
+     * @param project the project for which the launcher is being retrieved
+     * @param overrideName the name of a configured JDK override
+     * @return a provider for the override's Java launcher
+     * @throws GradleException if no override with the supplied name exists
+     */
+    public Provider<JavaLauncher> getJavaLauncher(Project project, String overrideName) {
+        JdkSpecOverride override = overrides.findByName(overrideName);
+        if (override == null) {
+            throw new GradleException("No JDK override named '" + overrideName + "' is configured.");
+        }
+        return createJavaLauncher(project, override.getJdkSpec(), override.getJdkHome());
+    }
+
+    private Provider<JavaLauncher> createJavaLauncher(
+            Project project,
+            Provider<JdkSpec> specProvider,
+            Provider<Directory> jdkHomeProvider
+    ) {
+        return specProvider.map(spec -> {
             final JdkSpec finalJdkSpec = spec;
-            final Directory finalJdkHome = jdkHome.get();
+            final Directory finalJdkHome = jdkHomeProvider.get();
 
             JavaInstallationMetadata jimd = new JavaInstallationMetadata() {
                 @Override

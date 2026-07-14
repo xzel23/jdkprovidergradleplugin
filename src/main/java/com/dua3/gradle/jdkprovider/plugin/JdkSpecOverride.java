@@ -3,10 +3,14 @@
 
 package com.dua3.gradle.jdkprovider.plugin;
 
+import com.dua3.gradle.jdkprovider.types.JdkSpec;
 import com.dua3.gradle.jdkprovider.types.OSFamily;
 import com.dua3.gradle.jdkprovider.types.SystemArchitecture;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.jvm.toolchain.JvmVendorSpec;
 
 import javax.inject.Inject;
@@ -23,6 +27,10 @@ public abstract class JdkSpecOverride {
     private final Property<JvmVendorSpec> vendor;
     private final Property<Boolean> nativeImageCapable;
     private final Property<Boolean> javaFxBundled;
+
+    // Read-only properties populated by JdkProviderPlugin after resolution.
+    private final DirectoryProperty jdkHome;
+    private final Property<JdkSpec> jdkSpec;
 
     /**
      * Constructs an instance of {@code JdkSpecOverride} with the specified name and object factory.
@@ -41,6 +49,8 @@ public abstract class JdkSpecOverride {
         this.vendor = objects.property(JvmVendorSpec.class);
         this.nativeImageCapable = objects.property(Boolean.class);
         this.javaFxBundled = objects.property(Boolean.class);
+        this.jdkHome = objects.directoryProperty();
+        this.jdkSpec = objects.property(JdkSpec.class);
     }
 
     /**
@@ -141,5 +151,31 @@ public abstract class JdkSpecOverride {
      */
     public Property<Boolean> getJavaFxBundled() {
         return javaFxBundled;
+    }
+
+    /**
+     * Read-only provider for the resolved JDK home directory of this override.
+     *
+     * @return a provider for the resolved JDK home directory
+     */
+    public Provider<Directory> getJdkHome() {
+        return jdkHome;
+    }
+
+    /**
+     * Read-only provider for the resolved JDK specification of this override.
+     *
+     * @return a provider for the resolved JDK specification
+     */
+    public Provider<JdkSpec> getJdkSpec() {
+        return jdkSpec;
+    }
+
+    void setJdkHome(java.io.File jdkHome) {
+        this.jdkHome.fileValue(jdkHome);
+    }
+
+    void setJdkSpec(JdkSpec jdkSpec) {
+        this.jdkSpec.set(jdkSpec);
     }
 }

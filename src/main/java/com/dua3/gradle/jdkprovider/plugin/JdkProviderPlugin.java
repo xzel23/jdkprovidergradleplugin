@@ -134,7 +134,9 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                         extension.getLangVersion().getOrElse(overrideInstallation.jdkSpec().version().feature())
                 );
                 overrideLanguageVersions.put(override.getName(), overrideLanguageVersion);
-                logger.lifecycle("JDK override for '{}': {} ()", override.getName(), overrideInstallation.jdkSpec(), globalJdkInstallation.jdkHome());
+                override.setJdkHome(overrideInstallation.jdkHome().toFile());
+                override.setJdkSpec(overrideInstallation.jdkSpec());
+                logger.lifecycle("JDK override for '{}': {} ({})", override.getName(), overrideInstallation.jdkSpec(), overrideInstallation.jdkHome());
             });
 
             // wire tasks
