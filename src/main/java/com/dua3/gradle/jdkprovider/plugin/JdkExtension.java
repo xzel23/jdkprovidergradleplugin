@@ -40,6 +40,7 @@ public abstract class JdkExtension {
     private final Property<OSFamily> os;
     private final Property<SystemArchitecture> arch;
     private final Property<Object> version;
+    private final Property<Integer> langVersion;
     private final Property<JvmVendorSpec> vendor;
     private final Property<Boolean> nativeImageCapable;
     private final Property<Boolean> javaFxBundled;
@@ -57,12 +58,13 @@ public abstract class JdkExtension {
      *                configuration, such as operating system, system architecture, version,
      *                vendor, and boolean flags for specific capabilities.
      */
-    @SuppressWarnings("ConstructorNotProtectedInAbstractClass") // needed for @Inject
+    @SuppressWarnings({"ConstructorNotProtectedInAbstractClass", "java:S5993"}) // needed for @Inject
     @Inject
     public JdkExtension(ObjectFactory objects) {
         this.os = objects.property(OSFamily.class);
         this.arch = objects.property(SystemArchitecture.class);
         this.version = objects.property(Object.class);
+        this.langVersion = objects.property(Integer.class);
         this.vendor = objects.property(JvmVendorSpec.class);
         this.nativeImageCapable = objects.property(Boolean.class);
         this.javaFxBundled = objects.property(Boolean.class);
@@ -118,6 +120,27 @@ public abstract class JdkExtension {
      */
     public void setVersion(String version) {
         this.version.set(version);
+    }
+
+    /**
+     * Retrieves the Java language version used for compilation.
+     * <p>
+     * When set, this value is passed to {@code javac} using {@code --release}. If it is not set,
+     * the resolved JDK's feature version is used.
+     *
+     * @return a property containing the Java language version used for compilation
+     */
+    public Property<Integer> getLangVersion() {
+        return langVersion;
+    }
+
+    /**
+     * Sets the Java language version used for compilation.
+     *
+     * @param langVersion the value to pass to {@code javac --release}
+     */
+    public void setLangVersion(int langVersion) {
+        this.langVersion.set(langVersion);
     }
 
 

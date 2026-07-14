@@ -19,10 +19,13 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -58,6 +61,14 @@ class HelloSampleTest {
 
             File jarFile = new File(projectDir, "build/libs/hello-sample-1.0-SNAPSHOT.jar");
             assertTrue(jarFile.exists(), "JAR file not found: " + jarFile.getAbsolutePath());
+
+            File classFile = new File(projectDir, "build/classes/java/main/com/example/Hello.class");
+            assertTrue(classFile.exists(), "Compiled class file not found: " + classFile.getAbsolutePath());
+            try (DataInputStream input = new DataInputStream(new FileInputStream(classFile))) {
+                assertEquals(0xCAFEBABE, input.readInt(), "Unexpected class file magic");
+                input.readUnsignedShort(); // minor version
+                assertEquals(69, input.readUnsignedShort(), "Expected class file version for Java 25 (--release 25)");
+            }
         } catch (Exception e) {
             fail("Build failed unexpectedly: " + e.getMessage());
         }

@@ -28,6 +28,7 @@ import org.gradle.api.attributes.java.TargetJvmVersion;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -68,7 +69,7 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
     /**
      * Default constructor.
      */
-    @SuppressWarnings("ConstructorNotProtectedInAbstractClass")
+    @SuppressWarnings({"ConstructorNotProtectedInAbstractClass", "java:S5993"})  // needed for @Inject
     public JdkProviderPlugin() {
         // nothing to do
     }
@@ -119,13 +120,20 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
             logger.debug("[JDK Provider - Plugin] Global JDK for build: {} ({})", globalJdkInstallation.jdkSpec(), globalJdkInstallation.jdkHome());
             logger.lifecycle("JDK for this build: {}", globalJdkInstallation.jdkSpec());
 
+            int globalLanguageVersion = extension.getLangVersion().getOrElse(globalJdkInstallation.jdkSpec().version().feature());
+
             // resolve overrides
             Map<String, JdkInstallation> overrideInstallations = new HashMap<>();
+            Map<String, Integer> overrideLanguageVersions = new HashMap<>();
             extension.getOverrides().forEach(override -> {
                 JdkQuery overrideQuery = createJdkQuery(extension, override);
                 JdkInstallation overrideInstallation = jdkResolver.resolve(overrideQuery, offlineMode)
                         .orElseThrow(() -> new GradleException("No matching JDK found for override '" + override.getName() + "': " + overrideQuery));
                 overrideInstallations.put(override.getName(), overrideInstallation);
+                int overrideLanguageVersion = override.getLangVersion().getOrElse(
+                        extension.getLangVersion().getOrElse(overrideInstallation.jdkSpec().version().feature())
+                );
+                overrideLanguageVersions.put(override.getName(), overrideLanguageVersion);
                 logger.lifecycle("JDK override for '{}': {} ()", override.getName(), overrideInstallation.jdkSpec(), globalJdkInstallation.jdkHome());
             });
 
@@ -173,18 +181,17 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                 task.getOptions().setFork(true);
                 task.getOptions().getForkOptions().setExecutable(javac);
 
-                // Ensure 'release' is always set, but allow user overrides
                 int featureVersion = installation.jdkSpec().version().feature();
+                int languageVersion = getLanguageVersionForTask(
+                        task.getName(), p, globalLanguageVersion, overrideLanguageVersions
+                );
                 logger.info("[JDK Provider] active compiler for task '{}' has feature version {}, requested version is {}",
-                        task.getName(), featureVersion, task.getOptions().getRelease().map(String::valueOf).orElse("NA")
+                        task.getName(), featureVersion, languageVersion
                 );
 
                 if (featureVersion >= 9) {
-                    // Force the release version to match the resolved JDK version,
-                    // as we are explicitly overriding any other toolchain/JVM settings.
-                    // This can still be overridden by the user in the task configuration.
-                    logger.info("[JDK Provider] setting release for task '{}' to version {}", task.getName(), featureVersion);
-                    task.getOptions().getRelease().set(featureVersion);
+                    logger.info("[JDK Provider] setting release for task '{}' to version {}", task.getName(), languageVersion);
+                    task.getOptions().getRelease().set(languageVersion);
                 }
 
                 logger.info("[JDK Provider] task '{}' uses release {}", task.getName(), task.getOptions().getRelease().get());
@@ -232,10 +239,20 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
         }
     }
 
+    private int getLanguageVersionForTask(String taskName, Project project, int globalLanguageVersion, Map<String, Integer> overrides) {
+        String overrideName = getOverrideNameForTask(taskName, project, overrides);
+        return overrideName == null ? globalLanguageVersion : overrides.get(overrideName);
+    }
+
     private JdkInstallation getInstallationForTask(String taskName, Project project, JdkInstallation globalInstallation, Map<String, JdkInstallation> overrides) {
+        String overrideName = getOverrideNameForTask(taskName, project, overrides);
+        return overrideName == null ? globalInstallation : overrides.get(overrideName);
+    }
+
+    private String getOverrideNameForTask(String taskName, Project project, Map<String, ?> overrides) {
         SourceSetContainer sourceSets = project.getExtensions().findByType(SourceSetContainer.class);
         if (sourceSets == null) {
-            return globalInstallation;
+            return null;
         }
 
         return sourceSets.stream()
@@ -251,8 +268,8 @@ public abstract class JdkProviderPlugin implements Plugin<Project> {
                             taskName.equals(runTaskName);
                 })
                 .filter(ss -> overrides.containsKey(ss.getName()))
-                .map(ss -> overrides.get(ss.getName()))
+                .map(SourceSet::getName)
                 .findFirst()
-                .orElse(globalInstallation);
+                .orElse(null);
     }
 }

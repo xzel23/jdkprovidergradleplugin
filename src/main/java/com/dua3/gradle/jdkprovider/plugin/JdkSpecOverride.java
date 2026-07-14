@@ -19,6 +19,7 @@ public abstract class JdkSpecOverride {
     private final Property<OSFamily> os;
     private final Property<SystemArchitecture> arch;
     private final Property<Object> version;
+    private final Property<Integer> langVersion;
     private final Property<JvmVendorSpec> vendor;
     private final Property<Boolean> nativeImageCapable;
     private final Property<Boolean> javaFxBundled;
@@ -30,12 +31,13 @@ public abstract class JdkSpecOverride {
      * @param objects the object factory used to create property instances for this configuration
      */
     @Inject
-    @SuppressWarnings("ConstructorNotProtectedInAbstractClass") // needed for @Inject
+    @SuppressWarnings({"ConstructorNotProtectedInAbstractClass", "java:S5993"}) // needed for @Inject
     public JdkSpecOverride(String name, ObjectFactory objects) {
         this.name = name;
         this.os = objects.property(OSFamily.class);
         this.arch = objects.property(SystemArchitecture.class);
         this.version = objects.property(Object.class);
+        this.langVersion = objects.property(Integer.class);
         this.vendor = objects.property(JvmVendorSpec.class);
         this.nativeImageCapable = objects.property(Boolean.class);
         this.javaFxBundled = objects.property(Boolean.class);
@@ -93,6 +95,24 @@ public abstract class JdkSpecOverride {
      */
     public void setVersion(String version) {
         this.version.set(version);
+    }
+
+    /**
+     * Retrieves the Java language version used for compilation with this JDK override.
+     *
+     * @return a property containing the Java language version used for compilation
+     */
+    public Property<Integer> getLangVersion() {
+        return langVersion;
+    }
+
+    /**
+     * Sets the Java language version used for compilation with this JDK override.
+     *
+     * @param langVersion the value to pass to {@code javac --release}
+     */
+    public void setLangVersion(int langVersion) {
+        this.langVersion.set(langVersion);
     }
 
     /**

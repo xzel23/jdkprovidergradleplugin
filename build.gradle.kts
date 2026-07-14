@@ -17,11 +17,11 @@ import org.gradle.kotlin.dsl.withType
 
 /* define dependency versions */
 
-val recordBuilderVersion = "52"
+val recordBuilderVersion = "53"
 val commonsCompressVersion = "1.28.0"
 val jsonVersion = "20260522"
 val mockWebServerVersion = "5.4.0"
-val junitVersion = "6.1.0"
+val junitVersion = "6.1.2"
 
 /* plugins */
 
@@ -36,7 +36,7 @@ plugins {
 /* define group and version for publishing */
 
 group = "com.dua3.gradle"
-version = "0.8.0"
+version = "0.9.0"
 
 /* compile using Java 21 */
 

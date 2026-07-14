@@ -33,16 +33,28 @@ class JdkExtensionTest {
     }
 
     @Test
+    void testSetLangVersion() {
+        Project project = ProjectBuilder.builder().build();
+        JdkExtension extension = project.getObjects().newInstance(JdkExtension.class);
+
+        extension.setLangVersion(25);
+
+        assertEquals(25, extension.getLangVersion().get());
+    }
+
+    @Test
     void testOverrides() {
         Project project = ProjectBuilder.builder().build();
         JdkExtension extension = project.getObjects().newInstance(JdkExtension.class);
 
         extension.getOverrides().create("java9", override -> {
             override.setVersion(9);
+            override.setLangVersion(8);
         });
 
         assertEquals(1, extension.getOverrides().size());
         assertEquals("java9", extension.getOverrides().getByName("java9").getName());
         assertEquals(9, extension.getOverrides().getByName("java9").getVersion().get());
+        assertEquals(8, extension.getOverrides().getByName("java9").getLangVersion().get());
     }
 }

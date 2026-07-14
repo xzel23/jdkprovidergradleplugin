@@ -79,22 +79,24 @@ jdk {
 
 Supported properties:
 
-| Property                                                        | Type                 | Description                                                                              | Default                                           |
-|-----------------------------------------------------------------|----------------------|------------------------------------------------------------------------------------------|---------------------------------------------------|
-| `version`                                                       | `String`             | Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`.                         | `"latest"` (latest available version).            |
-| `vendor`                                                        | `JvmVendorSpec`      | Specific JDK vendor, e.g. `Azul`.                                                        | No preference (any vendor).                       |
-| `os`                                                            | `OSFamily`           | Target operating system family, i.e., `OSFamily.LINUX`.                                  | Current OS.                                       |
-| `arch`                                                          | `SystemArchitecture` | Target CPU architecture (e.g. `X64`, `AARCH64`).                                         | Current architecture.                             |
-| `nativeImageCapable`                                            | `Boolean`            | Require a JDK that is capable of building native images (e.g., GraalVM).                 | `false`                                           |
-| `javaFxBundled`                                                 | `Boolean`            | Require a JDK that bundles JavaFX (`true`) or excludes it (`false`).                     | `false`                                           |
-| `automaticDownload`                                             | `Boolean`            | Allow automatic download of matching JDKs (ignored when Gradle is in offline mode).      | `true`                                            |
+| Property                                                        | Type                 | Description                                                                                      | Default                                           |
+|-----------------------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------------|---------------------------------------------------|
+| `version`                                                       | `String`             | Java version requirement. Examples: `"21"`, `"21+"`, `"latest"`.                                 | `"latest"` (latest available version).            |
+| `langVersion`                                                   | `Integer`            | Java language version passed to `javac` with `--release`; must be supported by the selected JDK. | Resolved JDK feature version.                     |
+| `vendor`                                                        | `JvmVendorSpec`      | Specific JDK vendor, e.g. `Azul`.                                                                | No preference (any vendor).                       |
+| `os`                                                            | `OSFamily`           | Target operating system family, i.e., `OSFamily.LINUX`.                                          | Current OS.                                       |
+| `arch`                                                          | `SystemArchitecture` | Target CPU architecture (e.g. `X64`, `AARCH64`).                                                 | Current architecture.                             |
+| `nativeImageCapable`                                            | `Boolean`            | Require a JDK that is capable of building native images (e.g., GraalVM).                         | `false`                                           |
+| `javaFxBundled`                                                 | `Boolean`            | Require a JDK that bundles JavaFX (`true`) or excludes it (`false`).                             | `false`                                           |
+| `automaticDownload`                                             | `Boolean`            | Allow automatic download of matching JDKs (ignored when Gradle is in offline mode).              | `true`                                            |
 
 Example (Kotlin DSL):
 
 ```kotlin
 jdk {
-    // Choose any 21+ JDK (will return latest version >21)
-    version.set("21+")
+    // Use JDK 26, but compile code that runs on Java 25
+    version.set(26)
+    langVersion.set(25)
     
     // Vendor Adoptium
     vendor.set(org.gradle.jvm.toolchain.JvmVendorSpec.ADOPTIUM)
@@ -115,6 +117,10 @@ What the plugin does:
 - Resolves or locates a suitable JDK for your project and exposes it to the Gradle build.
 - Configures all tasks of type `JavaCompile`. `JavaDoc`, and `JavaExec` to use the resolved JDK
 - Ensures Java compilation uses a forked compiler process using the selected JDK.
+- Passes `--release <langVersion>` to Java compilation. When `langVersion` is omitted, the resolved JDK's feature version is used.
+
+`langVersion` can also be set inside a source-set override. An override's value takes precedence over the top-level
+value. If neither is set, each source set defaults to the feature version of its resolved JDK.
 
 ## Rationale
 
@@ -236,7 +242,8 @@ Have a look at the helloNative sample project to see how to put everything toget
 
 The plugin supports creating multi-release JARs by allowing you to override the JDK for specific source sets. When an override is defined for a source set, the plugin automatically configures the corresponding compilation, testing, and execution tasks to use that JDK. 
 
-Additionally, for Java 9 and newer, the plugin automatically sets the `compilerOptions.release` flag to match the JDK version if it hasn't been manually configured.
+Additionally, for Java 9 and newer, the plugin automatically sets the `compilerOptions.release` flag to `langVersion`.
+When `langVersion` is not configured, it defaults to the resolved JDK's feature version.
 
 Example (Kotlin DSL):
 
