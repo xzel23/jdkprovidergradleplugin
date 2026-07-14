@@ -157,7 +157,7 @@ An example `build.gradle.kts`:
 ```kotlin
     plugins {
         application
-        id("com.dua3.gradle.jdkprovider") version "0.8.0"
+        id("com.dua3.gradle.jdkprovider") version "0.9.0"
         id("org.beryx.jlink") version "4.0.0"
     }
     
