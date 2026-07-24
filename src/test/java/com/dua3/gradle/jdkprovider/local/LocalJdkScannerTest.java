@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocalJdkScannerTest {
@@ -49,6 +50,33 @@ class LocalJdkScannerTest {
         } else {
             System.setProperty("org.gradle.java.installations.paths", originalPathsProp);
         }
+    }
+
+    @Test
+    void prefersNewestMatchingPatchVersionWhenMultipleCompatibleJdksExist() throws IOException {
+        Path fakeJdkOld = Files.createTempDirectory("fake-jdk-old-");
+        Path fakeJdkNew = Files.createTempDirectory("fake-jdk-new-");
+
+        createFakeJdk(fakeJdkOld, "26.0.1");
+        createFakeJdk(fakeJdkNew, "26.0.2");
+
+        Map<String, String> env = new LinkedHashMap<>();
+        env.put("JAVA_HOME_A_OLD", fakeJdkOld.toString());
+        env.put("JAVA_HOME_B_NEW", fakeJdkNew.toString());
+
+        LocalJdkScanner scanner = new LocalJdkScanner(env, emptyCacheDir);
+
+        JdkQuery jdkQuery = JdkQueryBuilder.builder()
+                .versionSpec(VersionSpec.parse("26"))
+                .os(OSFamily.LINUX)
+                .arch(SystemArchitecture.X64)
+                .vendorSpec(JvmVendorSpec.AZUL)
+                .build();
+
+        List<JdkInstallation> found = scanner.getCompatibleInstalledJdks(jdkQuery);
+
+        assertTrue(found.size() >= 2, "Expected both fake JDKs to match");
+        assertEquals(Runtime.Version.parse("26.0.2"), found.getFirst().jdkSpec().version());
     }
 
     @Test
@@ -158,6 +186,20 @@ class LocalJdkScannerTest {
         assertTrue(found.size() >= 2);
         assertTrue(found.stream().map(JdkInstallation::jdkHome).anyMatch(fakeJdk1::equals));
         assertTrue(found.stream().map(JdkInstallation::jdkHome).anyMatch(fakeJdk2::equals));
+    }
+
+    private static void createFakeJdk(Path jdkHome, String version) throws IOException {
+        Path bin = jdkHome.resolve("bin");
+        Files.createDirectories(bin);
+        Files.writeString(bin.resolve(OSFamily.current() == OSFamily.WINDOWS ? "java.exe" : "java"), "java");
+
+        Path release = jdkHome.resolve("release");
+        Files.writeString(release, """
+                IMPLEMENTOR=\"Azul Systems, Inc.\"
+                JAVA_VERSION=\"%s\"
+                OS_NAME=\"Linux\"
+                OS_ARCH=\"x86_64\"
+                """.formatted(version));
     }
 }
 

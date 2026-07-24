@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -339,6 +340,7 @@ public final class LocalJdkScanner {
                     case "OS_ARCH" -> arch = SystemArchitecture.parse(value);
                     case "IMPLEMENTOR" -> vendor = getVendorFromImplementor(value);
                     case "MODULES" -> javafxBundled = getJavaFXBundledFromModules(value);
+                    default -> { /* ignore  */ }
                 }
             }
 
@@ -416,6 +418,9 @@ public final class LocalJdkScanner {
         return getInstalledJdks()
                 .stream()
                 .filter(jdkInstallation -> JdkQuery.isCompatible(jdkInstallation.jdkSpec(), jdkQuery))
+                .sorted(Comparator
+                        .comparing((JdkInstallation jdkInstallation) -> jdkInstallation.jdkSpec().version())
+                        .reversed())
                 .toList();
     }
 }
