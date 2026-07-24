@@ -120,7 +120,7 @@ public class JdkProvisioner {
             LOGGER.lifecycle("Downloading JDK from {}", downloadUri);
             HttpDownloader downloader = new HttpDownloader(
                     connectTimeoutMs(),
-                    readTimeoutMs(),
+                    downloadTimeoutMs(),
                     retries()
             );
             downloader.downloadTo(downloadUri, archive);
@@ -317,12 +317,12 @@ public class JdkProvisioner {
     }
 
     /**
-     * Returns the read timeout duration in milliseconds.
+     * Returns the maximum duration allowed for downloading a complete JDK archive.
      *
-     * @return the read timeout duration in milliseconds
+     * @return the download timeout duration in milliseconds
      */
-    private int readTimeoutMs() {
-        return 10_000;
+    private int downloadTimeoutMs() {
+        return 30 * 60 * 1_000;
     }
 
     /**

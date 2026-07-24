@@ -22,29 +22,36 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 
 /**
  * Simple HTTP downloader with timeouts and basic retry for transient failures.
  */
 public final class HttpDownloader {
+    private static final Duration MINIMUM_REQUEST_TIMEOUT = Duration.ofMinutes(30);
+
     private final HttpClient client;
-    private final Duration timeout;
+    private final Duration requestTimeout;
     private final int retries;
 
     /**
      * Constructs an instance of the HttpDownloader class with specified configuration parameters.
      *
      * @param connectTimeoutMs the timeout in milliseconds for establishing the HTTP connection
-     * @param readTimeoutMs the timeout in milliseconds for waiting to read data from the HTTP connection
+     * @param requestTimeoutMs the requested timeout in milliseconds; it is clamped to a duration suitable
+     *                      for a complete JDK archive download because {@link HttpClient} applies request
+     *                      timeouts to the response stream as well as the initial connection
      * @param retries the maximum number of retries to perform for transient failures; must be zero or greater
      */
-    public HttpDownloader(int connectTimeoutMs, int readTimeoutMs, int retries) {
+    public HttpDownloader(int connectTimeoutMs, int requestTimeoutMs, int retries) {
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
-        this.timeout = Duration.ofMillis(readTimeoutMs);
+        this.requestTimeout = Duration.ofMillis(requestTimeoutMs).compareTo(MINIMUM_REQUEST_TIMEOUT) < 0
+                ? MINIMUM_REQUEST_TIMEOUT
+                : Duration.ofMillis(requestTimeoutMs);
         this.retries = Math.max(0, retries);
     }
 
@@ -60,7 +67,10 @@ public final class HttpDownloader {
      * @throws InterruptedException if the operation is interrupted
      */
     public Path downloadTo(URI uri, Path targetFile) throws IOException, InterruptedException {
-        Files.createDirectories(targetFile.getParent());
+        Path parent = targetFile.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
         int attempts = 0;
         IOException lastIo = null;
         InterruptedException lastInterrupted = null;
@@ -68,20 +78,30 @@ public final class HttpDownloader {
             attempts++;
             try {
                 HttpRequest request = HttpRequest.newBuilder(uri)
-                        .timeout(timeout)
+                        .timeout(requestTimeout)
                         .GET()
                         .build();
                 HttpResponse<InputStream> resp = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
                 int code = resp.statusCode();
                 if (code >= 200 && code < 300) {
-                    try (InputStream in = resp.body()) {
-                        Files.copy(in, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    Path tempFile = Files.createTempFile(parent == null ? Path.of(".").toAbsolutePath() : parent,
+                            targetFile.getFileName().toString() + ".", ".part");
+                    try {
+                        try (InputStream in = resp.body()) {
+                            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        moveIntoPlace(tempFile, targetFile);
+                    } finally {
+                        Files.deleteIfExists(tempFile);
                     }
                     return targetFile;
-                } else if (code < 500 || code >= 600) {
-                    throw new IOException("HTTP " + code + " when downloading: " + uri);
                 }
-                // else retry on server errors
+                try (InputStream ignored = resp.body()) {
+                    if (code < 500 || code >= 600) {
+                        throw new IOException("HTTP " + code + " when downloading: " + uri);
+                    }
+                }
+                lastIo = new IOException("HTTP " + code + " when downloading: " + uri);
             } catch (IOException e) {
                 lastIo = e;
             } catch (InterruptedException e) {
@@ -92,5 +112,13 @@ public final class HttpDownloader {
         if (lastInterrupted != null) throw lastInterrupted;
         if (lastIo != null) throw lastIo;
         throw new IOException("Download failed: " + uri);
+    }
+
+    private static void moveIntoPlace(Path tempFile, Path targetFile) throws IOException {
+        try {
+            Files.move(tempFile, targetFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+            Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 }
