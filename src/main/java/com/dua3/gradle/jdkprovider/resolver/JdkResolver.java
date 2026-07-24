@@ -26,6 +26,7 @@ import org.gradle.api.logging.Logging;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,31 +61,68 @@ public class JdkResolver {
     public Optional<JdkInstallation> resolve(JdkQuery jdkQuery, boolean offlineMode) {
         LOGGER.debug("[JDK Provider - Resolver] Resolving toolchain for {}", jdkQuery);
 
-        return createLocalJdkScanner()
-                // first try to find an existing installation
-                .getCompatibleInstalledJdks(jdkQuery)
-                .stream()
-                .findFirst()
-                // then try downloading using DiscoAPI
-                .or(() -> {
-                    // No com.dua3.gradle.jdkprovider.local JDK found — try DiscoAPI-based resolution if not offline
-                    if (offlineMode) {
-                        throw new GradleException("Offline mode detected or automatic download disabled, cannot resolve toolchain");
-                    }
+        List<DiscoPackage> remotePackages = offlineMode ? List.of() : findDiscoPackagesSafely(jdkQuery);
 
-                    // use DiscoAPI to look up and provision a suitable JDK
-                    LOGGER.debug("[JDK Provider - Resolver] No matching local JDK found, querying DiscoAPI");
+        List<JdkInstallation> localJdks = getCompatibleInstalledJdks(jdkQuery);
+        Optional<JdkInstallation> localCandidate = newestByVersion(localJdks);
 
-                    try {
-                        JdkProvisioner provisioner = createJdkProvisioner();
-                        List<DiscoPackage> packages = createDiscoApiClient().findPackages(jdkQuery).stream()
-                                .filter(pkg -> !provisioner.isBlacklisted(pkg.downloadUri()))
-                                .toList();
-                        return provisionFirstAvailableJdk(jdkQuery, packages);
-                    } catch (RuntimeException e) {
-                        throw new GradleException("Error querying DiscoAPI: " + e.getMessage(), e);
-                    }
-                });
+        if (offlineMode) {
+            return localCandidate.or(() -> {
+                throw new GradleException("Offline mode detected or automatic download disabled, cannot resolve toolchain");
+            });
+        }
+
+        if (localCandidate.isPresent() && localVersionAtLeastRemoteVersion(localCandidate.get(), remotePackages)) {
+            return localCandidate;
+        }
+
+        try {
+            Optional<JdkInstallation> remoteCandidate = provisionFirstAvailableJdk(jdkQuery, remotePackages);
+            if (remoteCandidate.isPresent()) {
+                return remoteCandidate;
+            }
+        } catch (GradleException e) {
+            if (localCandidate.isPresent()) {
+                LOGGER.warn("[JDK Provider - Resolver] Failed to provision newer remote JDK, falling back to compatible local JDK: {}", e.toString());
+                return localCandidate;
+            }
+            throw e;
+        }
+
+        return localCandidate;
+    }
+
+    private static Optional<JdkInstallation> newestByVersion(List<JdkInstallation> installations) {
+        return installations.stream()
+                .max(Comparator.comparing(installation -> installation.jdkSpec().version()));
+    }
+
+    private static boolean localVersionAtLeastRemoteVersion(JdkInstallation localCandidate, List<DiscoPackage> remotePackages) {
+        return remotePackages.stream()
+                .map(DiscoPackage::version)
+                .max(Comparator.naturalOrder())
+                .map(remoteVersion -> localCandidate.jdkSpec().version().compareTo(remoteVersion) >= 0)
+                .orElse(true);
+    }
+
+    private List<DiscoPackage> findDiscoPackagesSafely(JdkQuery jdkQuery) {
+        try {
+            return findDiscoPackages(jdkQuery);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[JDK Provider - Resolver] Error querying DiscoAPI for {}: {}", jdkQuery, e.toString());
+            return List.of();
+        }
+    }
+
+    protected List<JdkInstallation> getCompatibleInstalledJdks(JdkQuery jdkQuery) {
+        return createLocalJdkScanner().getCompatibleInstalledJdks(jdkQuery);
+    }
+
+    protected List<DiscoPackage> findDiscoPackages(JdkQuery jdkQuery) {
+        JdkProvisioner provisioner = createJdkProvisioner();
+        return createDiscoApiClient().findPackages(jdkQuery).stream()
+                .filter(pkg -> !provisioner.isBlacklisted(pkg.downloadUri()))
+                .toList();
     }
 
     /**

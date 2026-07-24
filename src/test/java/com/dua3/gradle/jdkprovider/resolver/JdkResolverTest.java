@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,6 +88,102 @@ class JdkResolverTest {
         assertEquals(List.of("/downloads/broken.zip", "/downloads/good.zip"), resolver.attemptedPaths);
     }
 
+    @Test
+    void prefersRemoteJdkWhenItHasNewerPatchVersionThanLocalJdk() {
+        Path localHome = Path.of("/tmp/local-jdk-26.0.1");
+        Path remoteHome = Path.of("/tmp/remote-jdk-26.0.2");
+
+        ControlledResolver resolver = new ControlledResolver(
+                List.of(jdkInstallation(localHome, "26.0.1")),
+                List.of(discoPackage("26.0.2", "https://example.test/jdk-26.0.2.tar.gz")),
+                remoteHome,
+                Runtime.Version.parse("26.0.2"),
+                null
+        );
+
+        Optional<JdkInstallation> result = resolver.resolve(queryForVersion("26"), false);
+
+        assertTrue(result.isPresent());
+        assertEquals(remoteHome, result.get().jdkHome());
+        assertEquals(List.of("/jdk-26.0.2.tar.gz"), resolver.attemptedPaths);
+    }
+
+    @Test
+    void fallsBackToLocalJdkWhenDiscoLookupThrowsError() {
+        Path localHome = Path.of("/tmp/local-jdk-26.0.1");
+        Path remoteHome = Path.of("/tmp/remote-jdk-unused");
+
+        ControlledResolver resolver = new ControlledResolver(
+                List.of(jdkInstallation(localHome, "26.0.1")),
+                List.of(),
+                remoteHome,
+                Runtime.Version.parse("26.0.2"),
+                new RuntimeException("Disco API unavailable")
+        );
+
+        Optional<JdkInstallation> result = resolver.resolve(queryForVersion("26"), false);
+
+        assertTrue(result.isPresent());
+        assertEquals(localHome, result.get().jdkHome());
+        assertTrue(resolver.attemptedPaths.isEmpty());
+    }
+
+    @Test
+    void prefersLocalJdkWhenRemoteHasSameVersion() {
+        Path localHome = Path.of("/tmp/local-jdk-26.0.2");
+        Path remoteHome = Path.of("/tmp/remote-jdk-26.0.2");
+
+        ControlledResolver resolver = new ControlledResolver(
+                List.of(jdkInstallation(localHome, "26.0.2")),
+                List.of(discoPackage("26.0.2", "https://example.test/jdk-26.0.2.tar.gz")),
+                remoteHome,
+                Runtime.Version.parse("26.0.2"),
+                null
+        );
+
+        Optional<JdkInstallation> result = resolver.resolve(queryForVersion("26"), false);
+
+        assertTrue(result.isPresent());
+        assertEquals(localHome, result.get().jdkHome());
+        assertTrue(resolver.attemptedPaths.isEmpty());
+    }
+
+    private static JdkQuery queryForVersion(String version) {
+        return JdkQueryBuilder.builder()
+                .os(OSFamily.LINUX)
+                .arch(SystemArchitecture.X64)
+                .versionSpec(VersionSpec.parse(version))
+                .build();
+    }
+
+    private static DiscoPackage discoPackage(String version, String downloadUri) {
+        return new DiscoPackage(
+                URI.create(downloadUri),
+                "sha",
+                "zulu",
+                "tar.gz",
+                "jdk-" + version + ".tar.gz",
+                Runtime.Version.parse(version),
+                OSFamily.LINUX,
+                SystemArchitecture.X64,
+                "glibc"
+        );
+    }
+
+    private static JdkInstallation jdkInstallation(Path jdkHome, String version) {
+        return new JdkInstallation(
+                jdkHome,
+                new JdkSpec(
+                        OSFamily.LINUX,
+                        SystemArchitecture.X64,
+                        Runtime.Version.parse(version),
+                        "zulu",
+                        false,
+                        false
+                )
+        );
+    }
+
     private static final class TestResolver extends JdkResolver {
         private final String baseUrl;
         private final Path jdkHome;
@@ -125,6 +222,63 @@ class JdkResolverTest {
                             OSFamily.LINUX,
                             SystemArchitecture.X64,
                             Runtime.Version.parse("99"),
+                            "zulu",
+                            false,
+                            false
+                    )
+            ));
+        }
+    }
+
+    private static final class ControlledResolver extends JdkResolver {
+        private final List<JdkInstallation> localJdks;
+        private final List<DiscoPackage> discoPackages;
+        private final Path provisionedJdkHome;
+        private final Runtime.Version provisionedVersion;
+        private final RuntimeException discoFailure;
+        private final List<String> attemptedPaths = new ArrayList<>();
+
+        private ControlledResolver(
+                List<JdkInstallation> localJdks,
+                List<DiscoPackage> discoPackages,
+                Path provisionedJdkHome,
+                Runtime.Version provisionedVersion,
+                RuntimeException discoFailure
+        ) {
+            this.localJdks = localJdks;
+            this.discoPackages = discoPackages;
+            this.provisionedJdkHome = provisionedJdkHome;
+            this.provisionedVersion = provisionedVersion;
+            this.discoFailure = discoFailure;
+        }
+
+        @Override
+        protected List<JdkInstallation> getCompatibleInstalledJdks(JdkQuery jdkQuery) {
+            return localJdks;
+        }
+
+        @Override
+        protected List<DiscoPackage> findDiscoPackages(JdkQuery jdkQuery) {
+            if (discoFailure != null) {
+                throw discoFailure;
+            }
+            return discoPackages;
+        }
+
+        @Override
+        protected Path provisionPackage(DiscoPackage pkg) {
+            attemptedPaths.add(pkg.downloadUri().getPath());
+            return provisionedJdkHome;
+        }
+
+        @Override
+        protected Optional<JdkInstallation> readJdkSpec(Path jdkHome) {
+            return Optional.of(new JdkInstallation(
+                    jdkHome,
+                    new JdkSpec(
+                            OSFamily.LINUX,
+                            SystemArchitecture.X64,
+                            provisionedVersion,
                             "zulu",
                             false,
                             false
